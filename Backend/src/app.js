@@ -25,7 +25,9 @@ app.use(cors({
 
         return callback(new Error("Not allowed by CORS"))
     },
-    credentials: true
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 }))
 
 /* require all the routes here */
