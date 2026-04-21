@@ -5,7 +5,14 @@ const tokenBlacklistModel = require("../models/blacklist.model")
 
 async function authUser(req, res, next) {
 
-    const token = req.cookies.token
+    // Try Authorization header first (works cross-origin), fallback to cookie
+    let token = null
+    const authHeader = req.headers["authorization"]
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.split(" ")[1]
+    } else {
+        token = req.cookies.token
+    }
 
     if (!token) {
         return res.status(401).json({
