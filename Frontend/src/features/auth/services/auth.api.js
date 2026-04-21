@@ -15,36 +15,27 @@ api.interceptors.request.use((config) => {
 })
 
 export async function register({ username, email, password }) {
-
     try {
         const response = await api.post('/api/auth/register', {
             username, email, password
         })
-
         return response.data
-
     } catch (err) {
-
-        console.log(err)
-
+        const message = err?.response?.data?.message || "Registration failed"
+        throw new Error(message)
     }
-
 }
 
 export async function login({ email, password }) {
-
     try {
-
         const response = await api.post("/api/auth/login", {
             email, password
         })
-
         return response.data
-
     } catch (err) {
-        console.log(err)
+        const message = err?.response?.data?.message || "Login failed"
+        throw new Error(message)
     }
-
 }
 
 export async function logout() {
