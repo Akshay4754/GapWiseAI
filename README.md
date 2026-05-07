@@ -7,27 +7,30 @@
 ![React](https://img.shields.io/badge/Frontend-React%20+%20Vite-61DAFB?style=for-the-badge&logo=react)
 ![MongoDB](https://img.shields.io/badge/Database-MongoDB-47A248?style=for-the-badge&logo=mongodb)
 ![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini-4285F4?style=for-the-badge&logo=google)
+![Docker](https://img.shields.io/badge/Containerized-Docker-2496ED?style=for-the-badge&logo=docker)
+![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions)
 
 ---
 
-## ✨ Features
+# ✨ Features
 
-- 🔐 **Auth System** — Secure JWT-based login & registration
-- 📄 **Resume Upload** — Upload your existing resume (PDF/text)
-- 🤖 **AI Interview Report** — Gemini AI generates:
-  - Match score (0–100) between your profile and the job
-  - Technical questions with answers and interviewer intent
-  - Behavioral questions with STAR-format guidance
-  - Skill gap analysis with severity levels
-  - 5-day personalized preparation plan
-- 📥 **Resume PDF Generator** — Download an ATS-friendly, tailored resume PDF
-- 📚 **Report History** — View all past interview reports
+- 🔐 **JWT Authentication System**
+- 📄 **Resume Upload & Parsing**
+- 🤖 **AI Interview Report Generation**
+- 📊 **Skill Gap Analysis**
+- 🧠 **Technical + Behavioral Questions**
+- 📅 **Personalized Preparation Roadmap**
+- 📥 **ATS-Friendly Resume PDF Generator**
+- 📚 **Interview Report History**
+- 🐳 **Dockerized Full Stack Application**
+- ⚙️ **GitHub Actions CI/CD Pipeline**
+- 🧪 **Automated API Testing with Jest & Supertest**
 
 ---
 
-## 🛠️ Tech Stack
+# 🛠️ Tech Stack
 
-### Backend
+## Backend
 | Technology | Purpose |
 |---|---|
 | Node.js + Express | REST API server |
@@ -35,164 +38,297 @@
 | JWT + bcryptjs | Authentication |
 | Google Gemini AI (`@google/genai`) | AI report & resume generation |
 | Puppeteer Core + Chromium | HTML → PDF conversion |
-| Multer | Resume file uploads |
+| Multer | Resume uploads |
 | Zod | Schema validation |
+| Jest + Supertest | API testing |
 
-### Frontend
+## Frontend
 | Technology | Purpose |
 |---|---|
-| React 19 + Vite | UI framework |
-| React Router v7 | Client-side routing |
-| Axios | HTTP requests |
+| React 19 + Vite | Frontend framework |
+| React Router v7 | Routing |
+| Axios | API requests |
 | SASS | Styling |
+
+## DevOps & Deployment
+| Technology | Purpose |
+|---|---|
+| Docker | Containerization |
+| Docker Compose | Multi-container orchestration |
+| GitHub Actions | CI/CD automation |
+| Nginx | Frontend production server |
+| Render | Deployment platform |
 
 ---
 
-## 🚀 Getting Started (Local Development)
+# 🚀 Local Development Setup
 
-### Prerequisites
+## Prerequisites
 - Node.js >= 18
+- Docker & Docker Compose
 - MongoDB Atlas account (or local MongoDB)
-- Google Gemini API key → [Get one here](https://aistudio.google.com/app/apikey)
+- Google Gemini API key
 
-### 1. Clone the repo
+---
+
+# 1️⃣ Clone Repository
+
 ```bash
 git clone https://github.com/Akshay4754/GapWiseAI.git
-cd your-repo-name
+cd GapWiseAI
 ```
 
-### 2. Setup Backend
+---
+
+# 2️⃣ Backend Setup
+
 ```bash
 cd Backend
 npm install
 ```
 
-Create a `.env` file inside `Backend/`:
+Create `.env` inside `Backend/`
+
 ```env
 PORT=3000
 MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
+JWT_SECRET=your_jwt_secret
 GOOGLE_GENAI_API_KEY=your_gemini_api_key
 FRONTEND_ORIGIN=http://localhost:5173
 ```
 
-Start the backend:
+Run backend:
+
 ```bash
 npm run dev
 ```
 
-### 3. Setup Frontend
+---
+
+# 3️⃣ Frontend Setup
+
 ```bash
 cd Frontend
 npm install
 ```
 
-Create a `.env` file inside `Frontend/`:
+Create `.env` inside `Frontend/`
+
 ```env
 VITE_API_URL=http://localhost:3000
 ```
 
-Start the frontend:
+Run frontend:
+
 ```bash
 npm run dev
 ```
 
-App will be live at `http://localhost:5173`
+Frontend runs at:
+
+```bash
+http://localhost:5173
+```
 
 ---
 
-## 📁 Project Structure
+# 🐳 Docker Setup
 
+## Run Full Application
+
+```bash
+docker-compose up --build
 ```
-YT-GENAI/
-├── Backend/
-│   ├── src/
-│   │   ├── config/         # Database connection
-│   │   ├── controllers/    # Route handlers (auth, interview)
-│   │   ├── middlewares/    # JWT auth middleware
-│   │   ├── models/         # Mongoose models (User, Interview, Blacklist)
-│   │   ├── routes/         # Express routers
-│   │   ├── services/       # AI & PDF generation logic
-│   │   └── app.js          # Express app setup (CORS, routes)
-│   ├── server.js           # Entry point
-│   └── package.json
+
+## Build Containers Individually
+
+### Backend
+
+```bash
+docker build -t gapwise-backend ./Backend
+```
+
+### Frontend
+
+```bash
+docker build -t gapwise-frontend ./Frontend
+```
+
+---
+
+# ⚙️ CI/CD Pipeline
+
+GitHub Actions workflow automatically:
+
+- ✅ Installs dependencies
+- ✅ Runs Jest tests
+- ✅ Builds Docker images
+- ✅ Pushes Docker images (after successful tests)
+
+Workflow file:
+
+```bash
+.github/workflows/ci.yml
+```
+
+---
+
+# 🔐 Required GitHub Secrets
+
+Go to:
+
+```bash
+GitHub Repo → Settings → Secrets → Actions
+```
+
+Add:
+
+```env
+DOCKER_USERNAME
+DOCKER_PASSWORD
+MONGO_URI_TEST
+```
+
+---
+
+# 📁 Updated Project Structure
+
+```bash
+GapWiseAI/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                 # GitHub Actions CI/CD pipeline
 │
-└── Frontend/
-    ├── src/
-    │   ├── features/
-    │   │   ├── auth/       # Login, Register, Protected routes, useAuth hook
-    │   │   └── interview/  # Interview report UI & API services
-    │   └── app.routes.jsx  # Route definitions
-    ├── public/
-    │   └── _redirects      # Render SPA routing fix
-    └── package.json
+├── docker-compose.yml             # Multi-container orchestration
+│
+├── Backend/
+│   ├── Dockerfile                 # Backend container setup
+│   ├── .env.example               # Environment variables template
+│   ├── package.json
+│   ├── server.js                  # Backend entry point
+│   ├── tests/
+│   │   └── api.test.js            # Jest + Supertest tests
+│   │
+│   └── src/
+│       ├── config/                # MongoDB configuration
+│       ├── controllers/           # Route handlers
+│       ├── middlewares/           # JWT middleware
+│       ├── models/                # Mongoose models
+│       ├── routes/                # Express routes
+│       ├── services/              # Gemini AI & PDF generation
+│       └── app.js                 # Express app configuration
+│
+├── Frontend/
+│   ├── Dockerfile                 # Frontend container setup
+│   ├── nginx.conf                 # Nginx production config
+│   ├── package.json
+│   ├── public/
+│   │   └── _redirects             # SPA routing fix
+│   │
+│   └── src/
+│       ├── features/
+│       │   ├── auth/              # Authentication feature
+│       │   └── interview/         # Interview dashboard
+│       │
+│       └── app.routes.jsx         # React routes
+│
+└── README.md
 ```
 
 ---
 
-## 🌐 Deployment (Render)
+# 🌐 Deployment
 
-This project is deployed on [Render](https://render.com) as two separate services:
+## Backend — Render Web Service
 
-### Backend — Web Service
 | Setting | Value |
 |---|---|
 | Root Directory | `Backend` |
 | Build Command | `npm install` |
 | Start Command | `npm start` |
 
-**Environment Variables to set on Render:**
-```
+### Environment Variables
+
+```env
 MONGO_URI
 JWT_SECRET
 GOOGLE_GENAI_API_KEY
-FRONTEND_ORIGIN=https://gapwise-frontend.onrender.com
+FRONTEND_ORIGIN=https://your-frontend-url.onrender.com
 ```
 
-### Frontend — Static Site
+---
+
+## Frontend — Render Static Site
+
 | Setting | Value |
 |---|---|
 | Root Directory | `Frontend` |
 | Build Command | `npm install && npm run build` |
 | Publish Directory | `dist` |
 
-**Environment Variables to set on Render:**
+### Environment Variables
+
+```env
+VITE_API_URL=https://your-backend-url.onrender.com
 ```
-VITE_API_URL=https://gapwise-backend.onrender.com
+
+---
+
+# 🧪 Running Tests
+
+```bash
+npm test
+```
+
+Uses:
+
+- Jest
+- Supertest
+
+Test location:
+
+```bash
+Backend/tests/api.test.js
 ```
 
 ---
 
-## 🔑 API Endpoints
+# 🔑 API Endpoints
 
-### Auth
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| POST | `/api/auth/register` | Public | Register new user |
-| POST | `/api/auth/login` | Public | Login user |
-| GET | `/api/auth/logout` | Private | Logout user |
-| GET | `/api/auth/get-me` | Private | Get current user |
+## Auth Routes
 
-### Interview
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| POST | `/api/interview/` | Private | Generate interview report |
-| GET | `/api/interview/` | Private | Get all reports |
-| GET | `/api/interview/report/:id` | Private | Get report by ID |
-| POST | `/api/interview/resume/pdf/:id` | Private | Download resume PDF |
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register user |
+| POST | `/api/auth/login` | Login user |
+| GET | `/api/auth/logout` | Logout user |
+| GET | `/api/auth/get-me` | Current user |
 
 ---
 
-## 🧠 How the AI Works
+## Interview Routes
 
-1. User provides **job description**, **self description**, and optionally a **resume file**
-2. Backend sends a structured prompt to **Google Gemini** with a strict JSON schema (via Zod)
-3. Gemini returns a validated JSON report with questions, skill gaps, and preparation plan
-4. For the resume PDF, Gemini generates custom HTML → converted to PDF via **Puppeteer + Chromium**
-5. Fallback responses are used if the AI is temporarily unavailable (rate limits, etc.)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/interview/` | Generate interview report |
+| GET | `/api/interview/` | Fetch all reports |
+| GET | `/api/interview/report/:id` | Fetch single report |
+| POST | `/api/interview/resume/pdf/:id` | Generate resume PDF |
 
 ---
 
-## 📄 License
+# 🧠 AI Workflow
 
-MIT © [Akshay Anand](https://github.com/Akshay4754)
+1. User uploads resume + job description
+2. Backend sends structured prompt to Gemini AI
+3. AI generates:
+   - Match score
+   - Technical questions
+   - Behavioral questions
+   - Skill gaps
+   - Preparation roadmap
+4. Resume HTML generated
+5. Puppeteer converts HTML → ATS-friendly PDF
+
+---
+
