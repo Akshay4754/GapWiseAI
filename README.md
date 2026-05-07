@@ -193,4 +193,6 @@ VITE_API_URL=https://gapwise-backend.onrender.com
 
 ---
 
+## 📄 License
 
+MIT © [Akshay Anand](https://github.com/Akshay4754)
