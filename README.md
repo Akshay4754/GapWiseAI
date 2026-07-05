@@ -17,7 +17,11 @@
 - 🔐 **JWT Authentication System**
 - 📄 **Resume Upload and PDF Parsing**
 - 🧠 **RAG-Powered Resume Matching Pipeline**
+<<<<<<< HEAD
 - 🤖 **AI Interview Report Generation (Gemini + Zod schema)**
+=======
+- 🤖 **AI Interview Report Generation (Zod schema)**
+>>>>>>> 4971bbfe600b7393b581d5e744459f64c6a1cf07
 - 📊 **Match Score Normalization and Skill Gap Analysis**
 - 💬 **Technical and Behavioral Questions with intent and answer guidance**
 - 📅 **Personalized Preparation Roadmap**
@@ -373,6 +377,8 @@ Backend/tests/api.test.js
 
 ---
 
-## 📄 License
 
+<<<<<<< HEAD
 MIT © Akshay Anand
+=======
+>>>>>>> 4971bbfe600b7393b581d5e744459f64c6a1cf07
