@@ -4,14 +4,18 @@ const cors = require("cors");
 
 const app = express();
 
+const normalizeOrigin = (value = "") => value.trim().replace(/\/+$/, "");
+
 const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:5173")
   .split(",")
-  .map((origin) => origin.trim())
+  .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
 
 for (const localOrigin of ["http://localhost:5173", "http://localhost:5174"]) {
-  if (!allowedOrigins.includes(localOrigin)) {
-    allowedOrigins.push(localOrigin);
+  const normalizedLocalOrigin = normalizeOrigin(localOrigin);
+
+  if (!allowedOrigins.includes(normalizedLocalOrigin)) {
+    allowedOrigins.push(normalizedLocalOrigin);
   }
 }
 
@@ -20,7 +24,9 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      const normalizedOrigin = normalizeOrigin(origin || "");
+
+      if (!origin || allowedOrigins.includes(normalizedOrigin)) {
         return callback(null, true);
       }
 
@@ -51,7 +57,7 @@ app.use("/api/interview", interviewRouter);
 app.use((err, req, res, next) => {
   if (err?.code === "LIMIT_FILE_SIZE") {
     return res.status(400).json({
-      message: "Resume file must be 5MB or smaller.",
+      message: "Uploaded file must be 5MB or smaller.",
     });
   }
 

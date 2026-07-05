@@ -1,73 +1,146 @@
-const { GoogleGenAI } = require("@google/genai")
-const { z } = require("zod")
-const { zodToJsonSchema } = require("zod-to-json-schema")
-const puppeteer = require("puppeteer-core")
-const chromium = require("@sparticuz/chromium")
+const fs = require("fs");
+const { GoogleGenAI } = require("@google/genai");
+const { z } = require("zod");
+const { zodToJsonSchema } = require("zod-to-json-schema");
+const puppeteer = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
 
 const createMissingApiKeyError = () => {
-    const error = new Error("GOOGLE_GENAI_API_KEY is missing. Add it to Backend/.env and restart the backend.")
-    error.code = "MISSING_AI_API_KEY"
-    error.status = 500
-    return error
-}
+  const error = new Error(
+    "GOOGLE_GENAI_API_KEY is missing. Add it to Backend/.env and restart the backend.",
+  );
+  error.code = "MISSING_AI_API_KEY";
+  error.status = 500;
+  return error;
+};
 
 const getAiClient = () => {
-    const apiKey = process.env.GOOGLE_GENAI_API_KEY?.trim()
-    if (!apiKey) {
-        throw createMissingApiKeyError()
-    }
+  const apiKey = process.env.GOOGLE_GENAI_API_KEY?.trim();
+  if (!apiKey) {
+    throw createMissingApiKeyError();
+  }
 
-    return new GoogleGenAI({ apiKey })
-}
+  return new GoogleGenAI({ apiKey });
+};
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const isTransientAiError = (error) => {
-    const status = error?.status || error?.error?.code
-    return status === 429 || status === 503
-}
+  const status = error?.status || error?.error?.code;
+  return status === 429 || status === 503;
+};
 
 async function withAiRetry(task, retries = 2) {
-    for (let attempt = 0; attempt <= retries; attempt += 1) {
-        try {
-            return await task()
-        } catch (error) {
-            if (attempt === retries || !isTransientAiError(error)) {
-                throw error
-            }
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await task();
+    } catch (error) {
+      if (attempt === retries || !isTransientAiError(error)) {
+        throw error;
+      }
 
-            await sleep(800 * (attempt + 1))
-        }
+      await sleep(800 * (attempt + 1));
     }
+  }
 }
 
 const deriveTitleFromJobDescription = (jobDescription = "") => {
-    const firstLine = jobDescription.replace(/\r/g, "").split("\n").map((line) => line.trim()).find(Boolean)
-    if (!firstLine) {
-        return "Target Role"
+  const firstLine = jobDescription
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.trim())
+    .find(Boolean);
+  if (!firstLine) {
+    return "Target Role";
+  }
+
+  return firstLine.length > 80
+    ? `${firstLine.slice(0, 77).trim()}...`
+    : firstLine;
+};
+
+const escapeHtml = (value = "") =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const normalizeMatchScore = (value) => {
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value.replace(/%/g, "").trim());
+    if (Number.isFinite(parsed)) {
+      value = parsed;
     }
+  }
 
-    return firstLine.length > 80 ? `${firstLine.slice(0, 77).trim()}...` : firstLine
-}
+  if (!Number.isFinite(value)) {
+    return null;
+  }
 
-const escapeHtml = (value = "") => String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
-        .replace(/'/g, "&#39;")
+  const normalizedValue = value >= 0 && value <= 1 ? value * 100 : value;
+  return Math.max(0, Math.min(100, Math.round(normalizedValue)));
+};
 
-function buildFallbackResumeHtml({ resume = "", selfDescription = "", jobDescription = "" }) {
-        const name = (resume.split(/\r?\n/).map((line) => line.trim()).find((line) => /^[A-Za-z][A-Za-z\s.]{2,50}$/.test(line)) || "Candidate").trim()
-        const role = deriveTitleFromJobDescription(jobDescription)
-        const summary = (selfDescription || "Professional profile tailored to the target role.").trim()
-        const bullets = resume
-                .split(/\r?\n/)
-                .map((line) => line.trim().replace(/^[•\-*]\s*/, ""))
-                .filter(Boolean)
-                .slice(0, 14)
+const buildKeywordCoverageScore = ({
+  resume = "",
+  selfDescription = "",
+  jobDescription = "",
+}) => {
+  const sourceText = `${resume}\n${selfDescription}`.toLowerCase();
+  const jobTokens = (
+    jobDescription.toLowerCase().match(/[a-z0-9+#.-]{3,}/g) || []
+  ).filter(
+    (token) =>
+      ![
+        "the",
+        "and",
+        "for",
+        "with",
+        "that",
+        "this",
+        "from",
+        "you",
+        "your",
+        "are",
+        "our",
+      ].includes(token),
+  );
 
-        return `
+  const uniqueTokens = [...new Set(jobTokens)];
+  if (uniqueTokens.length === 0) {
+    return 0;
+  }
+
+  const matchedTokens = uniqueTokens.filter((token) =>
+    sourceText.includes(token),
+  );
+  return Math.round((matchedTokens.length / uniqueTokens.length) * 100);
+};
+
+function buildFallbackResumeHtml({
+  resume = "",
+  selfDescription = "",
+  jobDescription = "",
+}) {
+  const name = (
+    resume
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => /^[A-Za-z][A-Za-z\s.]{2,50}$/.test(line)) || "Candidate"
+  ).trim();
+  const role = deriveTitleFromJobDescription(jobDescription);
+  const summary = (
+    selfDescription || "Professional profile tailored to the target role."
+  ).trim();
+  const bullets = resume
+    .split(/\r?\n/)
+    .map((line) => line.trim().replace(/^[•\-*]\s*/, ""))
+    .filter(Boolean)
+    .slice(0, 14);
+
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -103,181 +176,452 @@ function buildFallbackResumeHtml({ resume = "", selfDescription = "", jobDescrip
     </div>
 </body>
 </html>
-        `
+        `;
 }
 
-function buildFallbackInterviewReport({ resume = "", selfDescription = "", jobDescription = "" }) {
-    const sourceText = `${resume}\n${selfDescription}\n${jobDescription}`.toLowerCase()
-    const keywords = [ "react", "node", "express", "mongodb", "api", "javascript", "typescript" ]
-    const hits = keywords.filter((item) => sourceText.includes(item)).length
-    const matchScore = Math.max(55, Math.min(90, 55 + (hits * 5)))
+function buildFallbackInterviewReport({
+  resume = "",
+  selfDescription = "",
+  jobDescription = "",
+}) {
+  const sourceText =
+    `${resume}\n${selfDescription}\n${jobDescription}`.toLowerCase();
+  const keywords = [
+    "react",
+    "node",
+    "express",
+    "mongodb",
+    "api",
+    "javascript",
+    "typescript",
+  ];
+  const hits = keywords.filter((item) => sourceText.includes(item)).length;
+  const matchScore = Math.max(
+    0,
+    Math.min(100, Math.round((hits / keywords.length) * 100)),
+  );
 
-    return {
-        title: deriveTitleFromJobDescription(jobDescription),
-        matchScore,
-        technicalQuestions: [
-            {
-                question: "Walk through a relevant project and explain your architecture decisions.",
-                intention: "Assess depth of technical ownership and design thinking.",
-                answer: "Use a clear structure: context, constraints, chosen design, trade-offs, and measurable outcome."
-            },
-            {
-                question: "How would you break down this role's key technical requirements into milestones?",
-                intention: "Evaluate planning, prioritization, and execution approach.",
-                answer: "Split work into phases, define dependencies, and include testing/monitoring checkpoints."
-            },
-            {
-                question: "How do you debug production issues with limited information?",
-                intention: "Measure troubleshooting method and reliability mindset.",
-                answer: "Discuss reproduction, logs/metrics, hypothesis testing, and post-incident prevention."
-            },
-            {
-                question: "What quality practices do you follow before shipping features?",
-                intention: "Check engineering discipline and risk management.",
-                answer: "Cover code reviews, automated tests, rollout strategy, and rollback readiness."
-            },
-            {
-                question: "How do you evaluate and choose between alternative implementations?",
-                intention: "Assess trade-off analysis and decision making.",
-                answer: "Compare complexity, scalability, maintainability, cost, and user impact."
-            }
+  return {
+    title: deriveTitleFromJobDescription(jobDescription),
+    matchScore,
+    technicalQuestions: [
+      {
+        question:
+          "Walk through a relevant project and explain your architecture decisions.",
+        intention: "Assess depth of technical ownership and design thinking.",
+        answer:
+          "Use a clear structure: context, constraints, chosen design, trade-offs, and measurable outcome.",
+      },
+      {
+        question:
+          "How would you break down this role's key technical requirements into milestones?",
+        intention: "Evaluate planning, prioritization, and execution approach.",
+        answer:
+          "Split work into phases, define dependencies, and include testing/monitoring checkpoints.",
+      },
+      {
+        question:
+          "How do you debug production issues with limited information?",
+        intention: "Measure troubleshooting method and reliability mindset.",
+        answer:
+          "Discuss reproduction, logs/metrics, hypothesis testing, and post-incident prevention.",
+      },
+      {
+        question:
+          "What quality practices do you follow before shipping features?",
+        intention: "Check engineering discipline and risk management.",
+        answer:
+          "Cover code reviews, automated tests, rollout strategy, and rollback readiness.",
+      },
+      {
+        question:
+          "How do you evaluate and choose between alternative implementations?",
+        intention: "Assess trade-off analysis and decision making.",
+        answer:
+          "Compare complexity, scalability, maintainability, cost, and user impact.",
+      },
+    ],
+    behavioralQuestions: [
+      {
+        question: "Tell me about a time you handled conflicting priorities.",
+        intention: "Assess stakeholder communication and prioritization.",
+        answer:
+          "Use STAR format and focus on alignment process and outcome impact.",
+      },
+      {
+        question: "Describe a mistake you made and how you handled it.",
+        intention: "Evaluate ownership and growth mindset.",
+        answer:
+          "Be specific, show accountability, and explain what changed afterward.",
+      },
+      {
+        question: "How do you collaborate when requirements are unclear?",
+        intention: "Measure proactive communication and ambiguity handling.",
+        answer:
+          "Explain how you clarify assumptions, align on scope, and iterate quickly.",
+      },
+      {
+        question: "Give an example of helping a teammate succeed.",
+        intention: "Assess teamwork and mentorship behavior.",
+        answer:
+          "Share a concrete example with actions and measurable team outcome.",
+      },
+      {
+        question: "Why does this role align with your strengths?",
+        intention: "Check motivation and role fit.",
+        answer:
+          "Connect your past impact and strengths to this role's priorities.",
+      },
+    ],
+    skillGaps: [
+      { skill: "Role-specific domain depth", severity: "high" },
+      { skill: "Advanced system design storytelling", severity: "medium" },
+      { skill: "Behavioral response structure", severity: "low" },
+    ],
+    preparationPlan: [
+      {
+        day: 1,
+        focus: "Role analysis",
+        tasks: [
+          "Extract top 5 responsibilities from JD",
+          "Map your projects to each responsibility",
         ],
-        behavioralQuestions: [
-            {
-                question: "Tell me about a time you handled conflicting priorities.",
-                intention: "Assess stakeholder communication and prioritization.",
-                answer: "Use STAR format and focus on alignment process and outcome impact."
-            },
-            {
-                question: "Describe a mistake you made and how you handled it.",
-                intention: "Evaluate ownership and growth mindset.",
-                answer: "Be specific, show accountability, and explain what changed afterward."
-            },
-            {
-                question: "How do you collaborate when requirements are unclear?",
-                intention: "Measure proactive communication and ambiguity handling.",
-                answer: "Explain how you clarify assumptions, align on scope, and iterate quickly."
-            },
-            {
-                question: "Give an example of helping a teammate succeed.",
-                intention: "Assess teamwork and mentorship behavior.",
-                answer: "Share a concrete example with actions and measurable team outcome."
-            },
-            {
-                question: "Why does this role align with your strengths?",
-                intention: "Check motivation and role fit.",
-                answer: "Connect your past impact and strengths to this role's priorities."
-            }
+      },
+      {
+        day: 2,
+        focus: "Technical deep dive",
+        tasks: [
+          "Prepare 2 architecture walkthroughs",
+          "Practice trade-off explanations",
         ],
-        skillGaps: [
-            { skill: "Role-specific domain depth", severity: "high" },
-            { skill: "Advanced system design storytelling", severity: "medium" },
-            { skill: "Behavioral response structure", severity: "low" },
+      },
+      {
+        day: 3,
+        focus: "Behavioral readiness",
+        tasks: [
+          "Draft STAR stories",
+          "Refine concise outcome-focused responses",
         ],
-        preparationPlan: [
-            { day: 1, focus: "Role analysis", tasks: [ "Extract top 5 responsibilities from JD", "Map your projects to each responsibility" ] },
-            { day: 2, focus: "Technical deep dive", tasks: [ "Prepare 2 architecture walkthroughs", "Practice trade-off explanations" ] },
-            { day: 3, focus: "Behavioral readiness", tasks: [ "Draft STAR stories", "Refine concise outcome-focused responses" ] },
-            { day: 4, focus: "Gap closure", tasks: [ "Review missing concepts", "Build one mini demo or case study" ] },
-            { day: 5, focus: "Mock interview", tasks: [ "Run full mock session", "Improve weak answers and final notes" ] },
-        ]
-    }
+      },
+      {
+        day: 4,
+        focus: "Gap closure",
+        tasks: ["Review missing concepts", "Build one mini demo or case study"],
+      },
+      {
+        day: 5,
+        focus: "Mock interview",
+        tasks: [
+          "Run full mock session",
+          "Improve weak answers and final notes",
+        ],
+      },
+    ],
+  };
 }
-
 
 const interviewReportSchema = z.object({
-    matchScore: z.number().describe("A score between 0 and 100 indicating how well the candidate's profile matches the job describe"),
-    technicalQuestions: z.array(z.object({
-        question: z.string().describe("The technical question can be asked in the interview"),
-        intention: z.string().describe("The intention of interviewer behind asking this question"),
-        answer: z.string().describe("How to answer this question, what points to cover, what approach to take etc.")
-    })).describe("Technical questions that can be asked in the interview along with their intention and how to answer them"),
-    behavioralQuestions: z.array(z.object({
-        question: z.string().describe("The technical question can be asked in the interview"),
-        intention: z.string().describe("The intention of interviewer behind asking this question"),
-        answer: z.string().describe("How to answer this question, what points to cover, what approach to take etc.")
-    })).describe("Behavioral questions that can be asked in the interview along with their intention and how to answer them"),
-    skillGaps: z.array(z.object({
+  matchScore: z
+    .number()
+    .describe(
+      "A score between 0 and 100 indicating how well the candidate's profile matches the job describe",
+    ),
+  technicalQuestions: z
+    .array(
+      z.object({
+        question: z
+          .string()
+          .describe("The technical question can be asked in the interview"),
+        intention: z
+          .string()
+          .describe("The intention of interviewer behind asking this question"),
+        answer: z
+          .string()
+          .describe(
+            "How to answer this question, what points to cover, what approach to take etc.",
+          ),
+      }),
+    )
+    .describe(
+      "Technical questions that can be asked in the interview along with their intention and how to answer them",
+    ),
+  behavioralQuestions: z
+    .array(
+      z.object({
+        question: z
+          .string()
+          .describe("The technical question can be asked in the interview"),
+        intention: z
+          .string()
+          .describe("The intention of interviewer behind asking this question"),
+        answer: z
+          .string()
+          .describe(
+            "How to answer this question, what points to cover, what approach to take etc.",
+          ),
+      }),
+    )
+    .describe(
+      "Behavioral questions that can be asked in the interview along with their intention and how to answer them",
+    ),
+  skillGaps: z
+    .array(
+      z.object({
         skill: z.string().describe("The skill which the candidate is lacking"),
-        severity: z.enum([ "low", "medium", "high" ]).describe("The severity of this skill gap, i.e. how important is this skill for the job and how much it can impact the candidate's chances")
-    })).describe("List of skill gaps in the candidate's profile along with their severity"),
-    preparationPlan: z.array(z.object({
-        day: z.number().describe("The day number in the preparation plan, starting from 1"),
-        focus: z.string().describe("The main focus of this day in the preparation plan, e.g. data structures, system design, mock interviews etc."),
-        tasks: z.array(z.string()).describe("List of tasks to be done on this day to follow the preparation plan, e.g. read a specific book or article, solve a set of problems, watch a video etc.")
-    })).describe("A day-wise preparation plan for the candidate to follow in order to prepare for the interview effectively"),
-    title: z.string().describe("The title of the job for which the interview report is generated"),
-})
+        severity: z
+          .enum(["low", "medium", "high"])
+          .describe(
+            "The severity of this skill gap, i.e. how important is this skill for the job and how much it can impact the candidate's chances",
+          ),
+      }),
+    )
+    .describe(
+      "List of skill gaps in the candidate's profile along with their severity",
+    ),
+  preparationPlan: z
+    .array(
+      z.object({
+        day: z
+          .number()
+          .describe("The day number in the preparation plan, starting from 1"),
+        focus: z
+          .string()
+          .describe(
+            "The main focus of this day in the preparation plan, e.g. data structures, system design, mock interviews etc.",
+          ),
+        tasks: z
+          .array(z.string())
+          .describe(
+            "List of tasks to be done on this day to follow the preparation plan, e.g. read a specific book or article, solve a set of problems, watch a video etc.",
+          ),
+      }),
+    )
+    .describe(
+      "A day-wise preparation plan for the candidate to follow in order to prepare for the interview effectively",
+    ),
+  title: z
+    .string()
+    .describe(
+      "The title of the job for which the interview report is generated",
+    ),
+});
 
-async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
+const pdfAnswerSchema = z.object({
+  answer: z
+    .string()
+    .describe(
+      "Grounded answer to the user's question based only on the PDF context.",
+    ),
+  supportingPoints: z
+    .array(z.string())
+    .describe("Short supporting points extracted from the retrieved context."),
+});
 
-    const ai = getAiClient()
+async function generateInterviewReport({
+  resume,
+  selfDescription,
+  jobDescription,
+}) {
+  const ai = getAiClient();
 
-
-    const prompt = `Generate an interview report for a candidate with the following details:
+  const prompt = `Generate an interview report for a candidate with the following details:
                         Resume: ${resume}
                         Self Description: ${selfDescription}
                         Job Description: ${jobDescription}
-`
+`;
 
-    try {
-        const response = await withAiRetry(() => ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: zodToJsonSchema(interviewReportSchema),
-            }
-        }))
+  try {
+    const response = await withAiRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: zodToJsonSchema(interviewReportSchema),
+        },
+      }),
+    );
 
-        return JSON.parse(response.text)
-    } catch (error) {
-        if (isTransientAiError(error)) {
-            return buildFallbackInterviewReport({ resume, selfDescription, jobDescription })
-        }
+    const parsedResponse = JSON.parse(response.text);
+    const normalizedScore = normalizeMatchScore(parsedResponse?.matchScore);
 
-        throw error
+    return {
+      ...parsedResponse,
+      matchScore:
+        normalizedScore ??
+        buildKeywordCoverageScore({ resume, selfDescription, jobDescription }),
+    };
+  } catch (error) {
+    if (isTransientAiError(error)) {
+      return buildFallbackInterviewReport({
+        resume,
+        selfDescription,
+        jobDescription,
+      });
     }
 
-
+    throw error;
+  }
 }
 
+async function answerQuestionFromPdf({ question, context, documentName }) {
+  const ai = getAiClient();
 
+  const prompt = `You are a careful RAG assistant.
+Use ONLY the provided context from the uploaded PDF to answer the user's question.
+If the answer is not present in the context, say that you could not find it in the document.
+
+Document: ${documentName || "Uploaded PDF"}
+
+Context:
+${context}
+
+Question: ${question}
+
+Return a JSON object with the following fields:
+- answer: a clear, concise answer grounded only in the context
+- supportingPoints: an array of short supporting facts from the context
+`;
+
+  try {
+    const response = await withAiRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: zodToJsonSchema(pdfAnswerSchema),
+        },
+      }),
+    );
+
+    const parsedResponse = JSON.parse(response.text);
+
+    return {
+      answer:
+        parsedResponse?.answer?.trim() ||
+        "I could not find a grounded answer in the uploaded PDF.",
+      supportingPoints: Array.isArray(parsedResponse?.supportingPoints)
+        ? parsedResponse.supportingPoints.filter(Boolean)
+        : [],
+    };
+  } catch (error) {
+    if (isTransientAiError(error)) {
+      return {
+        answer:
+          "I could not generate a confident answer right now. Please try again.",
+        supportingPoints: [],
+      };
+    }
+
+    throw error;
+  }
+}
 
 async function generatePdfFromHtml(htmlContent) {
-    const executablePath = await chromium.executablePath()
+  const localBrowserCandidates =
+    process.platform === "win32"
+      ? [
+          process.env.PUPPETEER_EXECUTABLE_PATH,
+          process.env.CHROME_PATH,
+          process.env.GOOGLE_CHROME_BIN,
+          "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+          "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+          "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+          "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        ]
+      : [
+          process.env.PUPPETEER_EXECUTABLE_PATH,
+          process.env.CHROME_PATH,
+          process.env.GOOGLE_CHROME_BIN,
+          "/usr/bin/google-chrome",
+          "/usr/bin/google-chrome-stable",
+          "/usr/bin/chromium",
+          "/usr/bin/chromium-browser",
+        ];
 
-    const browser = await puppeteer.launch({
-        args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+  const browserCandidates = [...localBrowserCandidates];
+
+  if (process.platform !== "win32") {
+    try {
+      const chromiumPath = await chromium.executablePath();
+      browserCandidates.unshift(chromiumPath);
+    } catch (error) {
+      console.warn(
+        "[PDF] Falling back to a locally installed browser:",
+        error.message,
+      );
+    }
+  }
+
+  let browser = null;
+  let lastLaunchError = null;
+
+  for (const candidate of browserCandidates) {
+    if (!candidate || !fs.existsSync(candidate)) {
+      continue;
+    }
+
+    try {
+      browser = await puppeteer.launch({
+        args: [
+          ...chromium.args,
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+        ],
         defaultViewport: chromium.defaultViewport,
-        executablePath,
-        headless: chromium.headless,
-    })
+        executablePath: candidate,
+        headless: true,
+      });
+      break;
+    } catch (error) {
+      lastLaunchError = error;
+      console.warn(
+        "[PDF] Browser launch failed for candidate:",
+        candidate,
+        error.message,
+      );
+    }
+  }
 
-    const page = await browser.newPage()
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" })
+  if (!browser) {
+    throw new Error(
+      `No compatible browser found for PDF generation. Last error: ${lastLaunchError?.message || "unknown"}`,
+    );
+  }
 
-    const pdfBuffer = await page.pdf({
-        format: "A4",
-        margin: {
-            top: "20mm",
-            bottom: "20mm",
-            left: "15mm",
-            right: "15mm"
-        }
-    })
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1240, height: 1754, deviceScaleFactor: 1 });
+  await page.emulateMediaType("screen");
+  await page.setContent(htmlContent, { waitUntil: "domcontentloaded" });
+  await new Promise((resolve) => setTimeout(resolve, 250));
 
-    await browser.close()
+  const pdfBuffer = await page.pdf({
+    format: "A4",
+    margin: {
+      top: "20mm",
+      bottom: "20mm",
+      left: "15mm",
+      right: "15mm",
+    },
+  });
 
-    return pdfBuffer
+  await browser.close();
+
+  return pdfBuffer;
 }
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
-    const resumePdfSchema = z.object({
-        html: z.string().describe("The HTML content of the resume which can be converted to PDF using any library like puppeteer")
-    })
+  const resumePdfSchema = z.object({
+    html: z
+      .string()
+      .describe(
+        "The HTML content of the resume which can be converted to PDF using any library like puppeteer",
+      ),
+  });
 
-    const prompt = `Generate resume for a candidate with the following details:
+  const prompt = `Generate resume for a candidate with the following details:
                         Resume: ${resume}
                         Self Description: ${selfDescription}
                         Job Description: ${jobDescription}
@@ -288,35 +632,45 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                         you can highlight the content using some colors or different font styles but the overall design should be simple and professional.
                         The content should be ATS friendly, i.e. it should be easily parsable by ATS systems without losing important information.
                         The resume should not be so lengthy, it should ideally be 1-2 pages long when converted to PDF. Focus on quality rather than quantity and make sure to include all the relevant information that can increase the candidate's chances of getting an interview call for the given job description.
-                    `
+                    `;
 
-    let htmlContent = ""
+  let htmlContent = "";
 
-    try {
-        const ai = getAiClient()
-        const response = await withAiRetry(() => ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: zodToJsonSchema(resumePdfSchema),
-            }
-        }))
+  try {
+    const ai = getAiClient();
+    const response = await withAiRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: zodToJsonSchema(resumePdfSchema),
+        },
+      }),
+    );
 
-        const jsonContent = JSON.parse(response.text)
-        htmlContent = typeof jsonContent?.html === "string" ? jsonContent.html.trim() : ""
-    } catch (error) {
-        console.error("Falling back to local resume PDF generation:", error)
-    }
+    const jsonContent = JSON.parse(response.text);
+    htmlContent =
+      typeof jsonContent?.html === "string" ? jsonContent.html.trim() : "";
+  } catch (error) {
+    console.error("Falling back to local resume PDF generation:", error);
+  }
 
-    if (!htmlContent) {
-        htmlContent = buildFallbackResumeHtml({ resume, selfDescription, jobDescription })
-    }
+  if (!htmlContent) {
+    htmlContent = buildFallbackResumeHtml({
+      resume,
+      selfDescription,
+      jobDescription,
+    });
+  }
 
-    const pdfBuffer = await generatePdfFromHtml(htmlContent)
+  const pdfBuffer = await generatePdfFromHtml(htmlContent);
 
-    return pdfBuffer
-
+  return pdfBuffer;
 }
 
-module.exports = { generateInterviewReport, generateResumePdf }
+module.exports = {
+  answerQuestionFromPdf,
+  generateInterviewReport,
+  generateResumePdf,
+};
