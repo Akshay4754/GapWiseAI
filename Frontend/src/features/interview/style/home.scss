@@ -1,115 +1,199 @@
 @use "sass:color";
 
-// ── Variables ────────────────────────────────────────────────────────────────
-$bg-page: #0d1117;
-$bg-card: #161b22;
-$bg-panel: #1c2230;
-$bg-input: #1e2535;
-$border-color: #2a3348;
-$text-primary: #e6edf3;
-$text-muted: #7d8590;
-$accent: #ff2d78;
-$accent-alt: #ff6b9d;
-$badge-required: #ff2d78;
-$badge-best: #ff2d78;
-$info-bg: #1b2a4a;
-$info-border: #2d4a7a;
+$bg-page: #081510;
+$bg-panel: rgba(7, 20, 16, 0.92);
+$bg-card: rgba(10, 27, 21, 0.95);
+$bg-card-soft: rgba(12, 31, 25, 0.9);
+$bg-input: rgba(9, 24, 19, 0.94);
+$border-color: rgba(120, 242, 188, 0.14);
+$border-strong: rgba(120, 242, 188, 0.22);
+$text-primary: #f2fff8;
+$text-muted: #9bc9b5;
+$text-soft: #c7efe0;
+$accent: #78f2bc;
+$accent-deep: #45c98d;
+$accent-wash: rgba(120, 242, 188, 0.08);
+$danger: #ff8a96;
+$shadow:
+  0 28px 90px rgba(0, 0, 0, 0.28),
+  inset 0 1px 0 rgba(255, 255, 255, 0.03);
 $font-stack:
+  "Segoe UI",
   system-ui,
   -apple-system,
   BlinkMacSystemFont,
-  "Segoe UI",
-  Roboto,
   sans-serif;
 
-// ── Page Shell ───────────────────────────────────────────────────────────────
 .home-page {
   width: 100%;
   min-height: 100vh;
-  background-color: $bg-page;
   color: $text-primary;
   font-family: $font-stack;
-
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 3rem 1.5rem 4rem;
   gap: 2rem;
+  padding: 2.7rem 1.4rem 3.8rem;
+  background:
+    radial-gradient(circle at top left, rgba(72, 184, 130, 0.12), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(22, 92, 63, 0.14), transparent 24%),
+    linear-gradient(135deg, #081510 0%, #0c1c17 42%, #06100d 100%);
 }
 
-// ── Page Header ──────────────────────────────────────────────────────────────
-.page-header {
-  text-align: center;
+.page-header,
+.home-workspace,
+.recent-reports,
+.page-footer {
   width: 100%;
   max-width: 1280px;
+}
 
-  h1 {
-    font-size: clamp(2.15rem, 4vw, 3.35rem);
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    color: $text-primary;
-  }
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
 
-  p {
-    color: $text-muted;
-    font-size: 0.95rem;
-    max-width: 480px;
-    margin: 0 auto;
-    line-height: 1.6;
-  }
-
-  .highlight {
+  &__eyebrow {
     color: $accent;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  &__content {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+    gap: 1.4rem;
+    align-items: end;
+  }
+
+  &__copy {
+    h1 {
+      margin: 0;
+      max-width: 12ch;
+      font-size: clamp(2.9rem, 5.8vw, 5.4rem);
+      line-height: 0.94;
+      letter-spacing: -0.05em;
+    }
+
+    p {
+      margin: 1rem 0 0;
+      max-width: 58ch;
+      color: $text-muted;
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+  }
+
+  &__stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+}
+
+.workspace-pill {
+  min-width: 180px;
+  padding: 1rem 1.05rem;
+  border-radius: 1.1rem;
+  border: 1px solid $border-color;
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+
+  strong {
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  &__label {
+    color: $text-muted;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
   }
 }
 
 .home-workspace {
-  width: 100%;
-  max-width: 1280px;
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.82fr);
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr);
+  gap: 1.2rem;
   align-items: start;
 }
 
-// ── Main Card ─────────────────────────────────────────────────────────────────
-.interview-card {
-  width: 100%;
-  max-width: none;
-  background-color: $bg-card;
+.interview-card,
+.pdf-assistant-card,
+.report-item {
   border: 1px solid $border-color;
-  border-radius: 1rem;
+  border-radius: 1.4rem;
+  box-shadow: $shadow;
+  backdrop-filter: blur(12px);
+}
+
+.interview-card {
   overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+  background:
+    linear-gradient(180deg, rgba(10, 28, 22, 0.98), rgba(7, 19, 15, 0.98));
 
   &__body {
-    display: flex;
-    min-height: 520px;
+    min-height: 500px;
+    padding: 0 1.25rem 1.25rem;
   }
 
   &__footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 1.5rem;
-    border-top: 1px solid $border-color;
+    gap: 1rem;
+    padding: 1.25rem 1.7rem 1.6rem;
+    border-top: 1px solid rgba(120, 242, 188, 0.1);
 
     .footer-info {
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       color: $text-muted;
     }
   }
 }
 
+.workspace-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.45rem 1.55rem 0.35rem;
+
+  h2 {
+    margin: 0.2rem 0 0;
+    font-size: 1.35rem;
+    letter-spacing: -0.03em;
+  }
+
+  &__sub {
+    margin: 0.45rem 0 0;
+    max-width: 44ch;
+    color: $text-muted;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  &__eyebrow {
+    margin: 0;
+    color: $accent;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.7rem;
+    font-weight: 800;
+  }
+}
+
 .pdf-assistant-card {
-  width: 100%;
-  min-height: 100%;
-  background: linear-gradient(180deg, rgba($accent, 0.09) 0%, $bg-card 32%);
-  border: 1px solid rgba($accent, 0.18);
-  border-radius: 1rem;
-  overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+  background:
+    linear-gradient(180deg, rgba(120, 242, 188, 0.08) 0%, rgba(10, 27, 21, 0.96) 26%),
+    linear-gradient(180deg, rgba(10, 27, 21, 0.98), rgba(7, 19, 15, 0.98));
   display: flex;
   flex-direction: column;
 
@@ -118,99 +202,130 @@ $font-stack:
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1.5rem 1.5rem 1rem;
+    padding: 1.45rem 1.45rem 1rem;
+    border-bottom: 1px solid rgba(120, 242, 188, 0.08);
 
     h2 {
       margin: 0.15rem 0 0.35rem;
-      font-size: 1.25rem;
+      font-size: 1.45rem;
+      letter-spacing: -0.03em;
     }
   }
 
   &__eyebrow {
     margin: 0;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     font-size: 0.72rem;
-    font-weight: 700;
-    color: $accent-alt;
+    font-weight: 800;
+    color: $accent;
   }
 
   &__sub {
     margin: 0;
     color: $text-muted;
-    line-height: 1.5;
-    font-size: 0.9rem;
-    max-width: 28ch;
+    line-height: 1.6;
+    font-size: 0.92rem;
+    max-width: 30ch;
   }
 
   &__body {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    padding: 0 1.5rem 1.5rem;
+    padding: 1.1rem 1.45rem 1.45rem;
   }
 }
 
-// ── Panels ────────────────────────────────────────────────────────────────────
-.panel-divider {
-  width: 1px;
-  background-color: $border-color;
-  flex-shrink: 0;
+.interview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+  gap: 1rem;
 }
 
 .panel {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 1.4rem;
+  border-radius: 1.2rem;
+  border: 1px solid rgba(120, 242, 188, 0.08);
+  background: rgba(255, 255, 255, 0.014);
 
   &__header {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    align-items: flex-start;
+    gap: 0.6rem;
     margin-bottom: 0.25rem;
 
     h2 {
+      margin: 0;
       font-size: 1rem;
-      font-weight: 600;
+      font-weight: 700;
       color: $text-primary;
-      flex: 1;
     }
   }
 
-  &__icon {
-    display: flex;
+  &__step {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(120, 242, 188, 0.18);
+    background: rgba(120, 242, 188, 0.08);
     color: $accent;
+    font-size: 0.76rem;
+    font-weight: 800;
+  }
+
+  &__title-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+
+    p {
+      margin: 0;
+      color: $text-muted;
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
   }
 
   &__textarea {
     flex: 1;
     width: 100%;
-    background-color: $bg-input;
-    border: 1px solid $border-color;
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
+    background-color: rgba(8, 23, 18, 0.82);
+    border: 1px solid rgba(120, 242, 188, 0.08);
+    border-radius: 1rem;
+    padding: 0.95rem 1rem;
     color: $text-primary;
     font-family: $font-stack;
-    font-size: 0.875rem;
+    font-size: 0.92rem;
     resize: none;
     outline: none;
-    transition: border-color 0.2s;
-    line-height: 1.5;
+    line-height: 1.6;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
 
     &::placeholder {
-      color: $text-muted;
+      color: rgba(155, 201, 181, 0.62);
     }
 
     &:focus {
-      border-color: $accent;
+      border-color: rgba(120, 242, 188, 0.18);
+      box-shadow: 0 0 0 4px rgba(120, 242, 188, 0.05);
+      transform: translateY(-1px);
     }
 
     &--short {
       flex: unset;
-      height: 96px;
+      min-height: 128px;
     }
   }
 
@@ -219,56 +334,59 @@ $font-stack:
 
     .char-counter {
       position: absolute;
-      bottom: 2.25rem;
       right: 2rem;
+      bottom: 2.25rem;
       font-size: 0.75rem;
       color: $text-muted;
     }
   }
 
   &--right {
-    gap: 0.75rem;
+    gap: 0.85rem;
   }
 }
 
-// ── Badges ────────────────────────────────────────────────────────────────────
+.profile-stack,
+.pdf-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
 .badge {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.15rem 0.5rem;
-  border-radius: 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  font-weight: 700;
 
-  &--required {
-    background-color: rgba($badge-required, 0.15);
-    color: $badge-required;
-    border: 1px solid rgba($badge-required, 0.3);
-  }
-
+  &--required,
   &--best {
-    background-color: rgba($badge-best, 0.15);
-    color: $badge-best;
-    border: 1px solid rgba($badge-best, 0.3);
+    background: rgba(120, 242, 188, 0.1);
+    border: 1px solid rgba(120, 242, 188, 0.18);
+    color: $accent;
   }
 }
 
-// ── Section Label ─────────────────────────────────────────────────────────────
 .section-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: $text-primary;
   margin-bottom: 0.25rem;
+  color: $text-primary;
+  font-size: 0.84rem;
+  font-weight: 700;
 }
 
-// ── Dropzone ──────────────────────────────────────────────────────────────────
-.upload-section {
+.upload-section,
+.self-description {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .dropzone {
@@ -276,93 +394,87 @@ $font-stack:
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 1.5rem 1rem;
-  background-color: $bg-input;
-  border: 2px dashed $border-color;
-  border-radius: 0.6rem;
+  gap: 0.4rem;
+  padding: 1.45rem 1rem;
+  min-height: 164px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px dashed rgba(120, 242, 188, 0.14);
+  border-radius: 1.05rem;
   cursor: pointer;
   transition:
-    border-color 0.2s,
-    background-color 0.2s;
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
 
   &:hover {
-    border-color: $accent;
-    background-color: rgba($accent, 0.05);
+    border-color: rgba(120, 242, 188, 0.28);
+    background-color: rgba(120, 242, 188, 0.04);
+    transform: translateY(-1px);
   }
 
   &__icon {
     color: $accent;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.15rem;
   }
 
   &__title {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: $text-primary;
     margin: 0;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: $text-primary;
   }
 
   &__subtitle {
-    font-size: 0.75rem;
-    color: $text-muted;
     margin: 0;
+    color: $text-muted;
+    font-size: 0.78rem;
+    line-height: 1.5;
   }
 
   &--compact {
-    min-height: 160px;
+    min-height: 142px;
   }
 }
 
-// ── OR Divider ────────────────────────────────────────────────────────────────
 .or-divider {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  margin: 0.15rem 0;
   color: $text-muted;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 
   &::before,
   &::after {
     content: "";
     flex: 1;
     height: 1px;
-    background-color: $border-color;
-  }
-
-  span {
-    white-space: nowrap;
+    background: rgba(120, 242, 188, 0.1);
   }
 }
 
-// ── Self Description ──────────────────────────────────────────────────────────
-.self-description {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-// ── Info Box ──────────────────────────────────────────────────────────────────
 .info-box {
   display: flex;
   align-items: flex-start;
-  gap: 0.6rem;
-  padding: 0.75rem 1rem;
-  background-color: $info-bg;
-  border: 1px solid $info-border;
-  border-radius: 0.5rem;
+  gap: 0.65rem;
+  padding: 0.95rem 1rem;
+  background: rgba(120, 242, 188, 0.04);
+  border: 1px solid rgba(120, 242, 188, 0.09);
+  border-radius: 1rem;
 
   &__icon {
     flex-shrink: 0;
-    color: #4a90e2;
-    margin-top: 1px;
+    color: $accent;
+    margin-top: 0.1rem;
   }
 
   p {
     margin: 0;
-    font-size: 0.8rem;
-    color: #8ab4f8;
-    line-height: 1.5;
+    color: $text-soft;
+    font-size: 0.82rem;
+    line-height: 1.6;
 
     strong {
       color: $text-primary;
@@ -370,58 +482,57 @@ $font-stack:
   }
 }
 
-// ── Generate Button ───────────────────────────────────────────────────────────
 .generate-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(
-    135deg,
-    $accent 0%,
-    color.adjust($accent, $lightness: -10%) 100%
-  );
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 600;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 1rem 1.4rem;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, $accent 0%, $accent-deep 100%);
+  color: #07120d;
+  font-family: $font-stack;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   cursor: pointer;
   transition:
-    opacity 0.2s,
-    transform 0.1s;
-  font-family: $font-stack;
+    transform 0.16s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+  box-shadow: 0 16px 28px rgba(35, 126, 88, 0.18);
 
   &:hover {
-    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 18px 34px rgba(35, 126, 88, 0.22);
   }
 
   &:active {
-    transform: scale(0.98);
+    transform: translateY(0);
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.68;
     cursor: not-allowed;
     transform: none;
+    box-shadow: none;
   }
 
   &--full {
     width: 100%;
-    justify-content: center;
   }
 }
 
 .pdf-question {
-  min-height: 112px;
+  min-height: 120px;
 }
 
 .pdf-answer-card {
-  padding: 1rem;
-  border-radius: 0.9rem;
-  border: 1px solid rgba($accent, 0.15);
-  background: rgba(13, 17, 23, 0.55);
-  backdrop-filter: blur(10px);
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(120, 242, 188, 0.12);
+  background: rgba(255, 255, 255, 0.02);
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -429,17 +540,17 @@ $font-stack:
   &__label {
     margin: 0;
     font-size: 0.72rem;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: $accent-alt;
+    letter-spacing: 0.12em;
+    color: $accent;
   }
 
   &__text {
     margin: 0;
     color: $text-primary;
-    line-height: 1.7;
-    font-size: 0.92rem;
+    line-height: 1.72;
+    font-size: 0.94rem;
   }
 
   &__group {
@@ -451,7 +562,7 @@ $font-stack:
   &__subheading {
     margin: 0;
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: $text-muted;
@@ -459,13 +570,13 @@ $font-stack:
 
   &__list {
     margin: 0;
-    padding-left: 1.1rem;
+    padding-left: 1.15rem;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.4rem;
 
     li {
-      color: color.adjust($text-muted, $lightness: 12%);
+      color: $text-soft;
       font-size: 0.88rem;
       line-height: 1.55;
     }
@@ -481,58 +592,88 @@ $font-stack:
 .source-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.35rem 0.7rem;
+  padding: 0.38rem 0.72rem;
   border-radius: 999px;
-  border: 1px solid rgba($accent, 0.25);
-  background-color: rgba($accent, 0.08);
+  border: 1px solid rgba(120, 242, 188, 0.18);
+  background: rgba(120, 242, 188, 0.08);
   color: $text-primary;
   font-size: 0.75rem;
+}
+
+.form-error {
+  margin: 0;
+  padding: 0 1.7rem 1.35rem;
+  color: $danger;
+  font-size: 0.92rem;
 }
 
 .recent-reports {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  width: 100%;
-  max-width: 1280px;
+  gap: 0.9rem;
 
-  .reports-list {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-
-    .report-item {
-      background-color: $bg-card;
-      border: 1px solid $border-color;
-      border-radius: 0.5rem;
-      padding: 1rem;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      cursor: pointer;
-      flex-shrink: 0;
-
-      .match-score {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: $accent;
-        align-items: flex-start;
-      }
-    }
+  h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    letter-spacing: -0.03em;
   }
 }
 
-// ── Page Footer ───────────────────────────────────────────────────────────────
+.reports-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.report-item {
+  padding: 1rem;
+  background: linear-gradient(180deg, $bg-card-soft, $bg-panel);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition:
+    transform 0.18s ease,
+    border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: $border-strong;
+  }
+
+  h3,
+  .report-meta,
+  .match-score {
+    margin: 0;
+  }
+
+  h3 {
+    font-size: 1rem;
+  }
+
+  .report-meta {
+    color: $text-muted;
+    font-size: 0.8rem;
+  }
+
+  .match-score {
+    color: $accent;
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+}
+
 .page-footer {
   display: flex;
+  justify-content: center;
   gap: 1.5rem;
+  padding-top: 0.35rem;
 
   a {
-    font-size: 0.8rem;
     color: $text-muted;
     text-decoration: none;
-    transition: color 0.2s;
+    font-size: 0.8rem;
+    transition: color 0.2s ease;
 
     &:hover {
       color: $text-primary;
@@ -541,52 +682,55 @@ $font-stack:
 }
 
 @media (max-width: 1120px) {
-  .home-workspace {
+  .page-header__content,
+  .home-workspace,
+  .interview-grid {
     grid-template-columns: 1fr;
   }
 
+  .page-header__stats {
+    justify-content: flex-start;
+  }
+
   .interview-card__body {
-    flex-direction: column;
-  }
-
-  .panel-divider {
-    width: 100%;
-    height: 1px;
-  }
-
-  .interview-nav,
-  .interview-content,
-  .interview-sidebar {
-    width: auto;
-  }
-
-  .interview-layout {
-    flex-direction: column;
-  }
-
-  .interview-divider {
-    width: 100%;
-    height: 1px;
+    padding: 0 1rem 1rem;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .home-page {
     padding: 2rem 1rem 3rem;
   }
 
+  .page-header__copy h1 {
+    max-width: none;
+    font-size: clamp(2.4rem, 12vw, 3.8rem);
+  }
+
+  .workspace-section-heading,
+  .pdf-assistant-card__header,
   .interview-card__footer {
     flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
+    align-items: flex-start;
   }
 
-  .generate-btn {
+  .panel {
+    padding: 1.2rem 1.1rem 1.1rem;
+  }
+
+  .workspace-pill {
+    min-width: 0;
     width: 100%;
-    justify-content: center;
   }
 
-  .pdf-assistant-card__header {
-    flex-direction: column;
+  .generate-btn,
+  .page-footer {
+    width: 100%;
+  }
+
+  .page-footer {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.9rem 1.2rem;
   }
 }

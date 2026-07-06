@@ -92,7 +92,6 @@ export const useInterview = () => {
   };
 
   const getResumePdf = async (interviewReportId) => {
-    setLoading(true);
     setError("");
     try {
       const response = await generateResumePdf({ interviewReportId });
@@ -113,8 +112,6 @@ export const useInterview = () => {
       const message = getErrorMessage(err);
       setError(message);
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
