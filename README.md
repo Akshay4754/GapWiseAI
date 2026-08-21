@@ -374,8 +374,5 @@ Backend/tests/api.test.js
 
 ---
 
-
-<<<<<<< HEAD
 MIT © Akshay Anand
-=======
->>>>>>> 4971bbfe600b7393b581d5e744459f64c6a1cf07
+
