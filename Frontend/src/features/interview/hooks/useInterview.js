@@ -25,6 +25,8 @@ export const useInterview = () => {
     setReport,
     reports,
     setReports,
+    reportsLoaded,
+    setReportsLoaded,
   } = context;
 
   const getErrorMessage = (err) => {
@@ -88,6 +90,7 @@ export const useInterview = () => {
       throw new Error(message);
     } finally {
       setLoading(false);
+      setReportsLoaded(true);
     }
   };
 
@@ -99,14 +102,14 @@ export const useInterview = () => {
         response instanceof Blob
           ? response
           : new Blob([response], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(pdfBlob);
+      const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", `resume_${interviewReportId}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       return true;
     } catch (err) {
       const message = getErrorMessage(err);
@@ -129,6 +132,7 @@ export const useInterview = () => {
     setError,
     report,
     reports,
+    reportsLoaded,
     generateReport,
     getReportById,
     getReports,

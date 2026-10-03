@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f8c66"/>
+      <stop offset=".55" stop-color="#27463a"/>
+      <stop offset="1" stop-color="#16281e"/>
+    </linearGradient>
+    <radialGradient id="shine" cx=".28" cy=".18" r=".6">
+      <stop offset="0" stop-color="#fff" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="40" height="40" rx="10" fill="url(#tile)"/>
+  <rect width="40" height="40" rx="10" fill="url(#shine)"/>
+  <path d="M27.07 12.93A10 10 0 1 0 30 20h-8" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M30.5 4.6 31.9 8.1 35.4 9.5 31.9 10.9 30.5 14.4 29.1 10.9 25.6 9.5 29.1 8.1Z" fill="#c2f5d0"/>
+</svg>

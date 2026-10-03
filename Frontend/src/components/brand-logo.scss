@@ -1,0 +1,273 @@
+@use "../style/theme" as t;
+
+$ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+$ease-out: cubic-bezier(.2, .8, .2, 1);
+$size: 2.35rem;
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: .7rem;
+  color: #18241c;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus-visible { outline: 2px solid #78b38a; outline-offset: 4px; border-radius: .8rem; }
+}
+
+// ---- 3D scene ----
+.brand-logo__scene {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: $size;
+  height: $size;
+  perspective: 260px;
+  animation: brand-scene-in .9s $ease-spring backwards;
+}
+
+.brand-logo__mark {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: brand-orbit-tilt 7s ease-in-out infinite;
+  transition: transform .5s $ease-spring;
+}
+
+// Extrusion: stacked darker slices behind the face give the tile real thickness
+.brand-logo__layer {
+  position: absolute;
+  inset: 0;
+  border-radius: .75rem;
+  background: linear-gradient(145deg, #2b4d38, #12221a);
+  transform: translateZ(calc(var(--i) * -1px));
+}
+
+.brand-logo__face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: .75rem;
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255,255,255,.28), transparent 55%),
+    linear-gradient(145deg, #4a8461 0%, #27463a 52%, #16281e 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.35),
+    inset 0 -1px 0 rgba(0,0,0,.3);
+
+  // recurring light sweep
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -30%;
+    background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.5) 50%, transparent 62%);
+    transform: translateX(-130%);
+    animation: brand-shine 5s 1s ease-in-out infinite;
+  }
+}
+
+.brand-logo__glyph {
+  position: absolute;
+  inset: 12%;
+  width: 76%;
+  height: 76%;
+  overflow: visible;
+  transform: translateZ(7px);
+  filter: drop-shadow(0 1.5px 1px rgba(0,0,0,.35));
+
+  &--spark { transform: translateZ(13px); }
+}
+
+.brand-logo__arc {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: brand-draw 1s .25s $ease-out forwards;
+}
+
+.brand-logo__spark {
+  fill: #c2f5d0;
+  filter: drop-shadow(0 0 3px rgba(184,240,200,.95));
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    brand-spark-pop .6s .9s $ease-spring backwards,
+    brand-spark-spin 6s 1.5s linear infinite;
+}
+
+// Particle orbiting the tile on a tilted ring (passes in front of and behind it)
+.brand-logo__orbit {
+  position: absolute;
+  inset: -22%;
+  border-radius: 50%;
+  transform-style: preserve-3d;
+  transform: rotateX(72deg) rotateY(-14deg);
+}
+.brand-logo__particle {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  animation: brand-spin 3.6s linear infinite;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: -2.5px;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    margin-left: -2.5px;
+    border-radius: 50%;
+    background: #a8eebc;
+    box-shadow: 0 0 6px 1px rgba(150,230,175,.9);
+    transform: rotateX(-72deg); // keep the dot facing the viewer
+  }
+}
+
+// Ground shadow that breathes with the float
+.brand-logo__shadow {
+  position: absolute;
+  bottom: -.42rem;
+  left: 50%;
+  width: 78%;
+  height: .38rem;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(31,58,41,.38), transparent 70%);
+  transform: translateX(-50%);
+  animation: brand-shadow 7s ease-in-out infinite;
+}
+
+// ---- Wordmark ----
+.brand-logo__word {
+  display: inline-flex;
+  align-items: baseline;
+  font-size: 1.32rem;
+  line-height: 1;
+}
+
+.brand-logo__gap {
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -.05em;
+  animation: brand-word-in .6s .25s $ease-out both;
+}
+
+.brand-logo__wise {
+  font-family: "DM Serif Display", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -.01em;
+  margin-left: .04em;
+  background: linear-gradient(90deg, #3d6f50 0%, #3d6f50 35%, #7cbb92 50%, #3d6f50 65%, #3d6f50 100%);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation:
+    brand-word-in .6s .38s $ease-out both,
+    brand-text-shimmer 5s 1s ease-in-out infinite;
+}
+
+.brand-logo__dot {
+  align-self: flex-end;
+  width: .28em;
+  height: .28em;
+  margin: 0 0 .1em .1em;
+  border-radius: 50%;
+  background: #78b38a;
+  animation:
+    brand-dot-in .5s .75s $ease-spring both,
+    brand-dot-pulse 2.6s 1.5s ease-in-out infinite;
+}
+
+// ---- Hover: freeze the turn, speed up the orbit ----
+.brand-logo:hover,
+.brand-logo:focus-visible {
+  .brand-logo__mark { animation-play-state: paused; }
+  .brand-logo__particle { animation-duration: 1.4s; }
+}
+
+// ---- Keyframes ----
+@keyframes brand-scene-in {
+  from { opacity: 0; transform: scale(.5) rotate(-30deg); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes brand-orbit-tilt {
+  0%   { transform: translateY(0)     rotateX(10deg)  rotateY(-28deg) rotateZ(-2deg); }
+  25%  { transform: translateY(-3px)  rotateX(-8deg)  rotateY(-6deg)  rotateZ(0deg); }
+  50%  { transform: translateY(-1px)  rotateX(6deg)   rotateY(28deg)  rotateZ(2deg); }
+  75%  { transform: translateY(-4px)  rotateX(-10deg) rotateY(8deg)   rotateZ(0deg); }
+  100% { transform: translateY(0)     rotateX(10deg)  rotateY(-28deg) rotateZ(-2deg); }
+}
+@keyframes brand-shadow {
+  0%, 50%, 100% { transform: translateX(-50%) scaleX(1);   opacity: 1; }
+  25%, 75%      { transform: translateX(-50%) scaleX(.8);  opacity: .65; }
+}
+@keyframes brand-shine {
+  0%, 55% { transform: translateX(-130%); }
+  80%, 100% { transform: translateX(130%); }
+}
+@keyframes brand-draw { to { stroke-dashoffset: 0; } }
+@keyframes brand-spark-pop {
+  from { opacity: 0; transform: scale(0) rotate(-90deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes brand-spark-spin {
+  0%   { transform: rotate(0)      scale(1); }
+  25%  { transform: rotate(90deg)  scale(1.25); }
+  50%  { transform: rotate(180deg) scale(.9); }
+  75%  { transform: rotate(270deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+@keyframes brand-spin { to { transform: rotateZ(360deg); } }
+@keyframes brand-word-in {
+  from { opacity: 0; transform: translateY(6px); filter: blur(3px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+@keyframes brand-text-shimmer {
+  0%, 40% { background-position: 100% 0; }
+  70%, 100% { background-position: 0 0; }
+}
+@keyframes brand-dot-in { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+@keyframes brand-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(120,179,138,0); }
+  50% { box-shadow: 0 0 0 .22em rgba(120,179,138,.22); }
+}
+
+// ---- Dark theme: brighter tile with a mint rim, light wordmark ----
+:root[data-theme="dark"] {
+  .brand-logo { color: t.$d-heading; }
+  .brand-logo__layer { background: linear-gradient(145deg, #2f5a43, #0c1912); }
+  .brand-logo__face {
+    background:
+      radial-gradient(circle at 28% 18%, rgba(255,255,255,.3), transparent 55%),
+      linear-gradient(145deg, #62ab7d 0%, #2f5a43 52%, #183025 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.4),
+      inset 0 -1px 0 rgba(0,0,0,.3),
+      inset 0 0 0 1px rgba(160,240,195,.18);
+  }
+  .brand-logo__shadow { background: radial-gradient(ellipse, rgba(72,184,130,.45), transparent 70%); }
+  .brand-logo__wise { background-image: linear-gradient(90deg, #8fd6a8 0%, #8fd6a8 35%, #e2fff0 50%, #8fd6a8 65%, #8fd6a8 100%); }
+  .brand-logo__dot { background: t.$d-mint; }
+}
+
+@media (max-width: 720px) {
+  .brand-logo__word { font-size: 1.18rem; }
+  .brand-logo__scene { width: 2.15rem; height: 2.15rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-logo *,
+  .brand-logo *::before,
+  .brand-logo *::after { animation: none !important; transition: none !important; }
+  .brand-logo__mark { transform: rotateX(8deg) rotateY(-18deg); }
+  .brand-logo__arc { stroke-dashoffset: 0; }
+  .brand-logo__wise { background-position: 100% 0; }
+}

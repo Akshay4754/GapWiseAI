@@ -1,276 +1,322 @@
-import React, { useState } from "react";
-import { useParams } from "react-router";
+import React, { useEffect, useState } from "react";
+import { Link, useParams } from "react-router";
 import { useInterview } from "../hooks/useInterview.js";
 import "../style/interview.scss";
+import BrandLogo from "../../../components/BrandLogo.jsx";
+import ResumeScanner from "../../../components/ResumeScanner.jsx";
+import ThemeToggle from "../../../components/ThemeToggle.jsx";
+import { usePageTitle } from "../../../hooks/usePageTitle.js";
 
-const NAV_ITEMS = [
-  {
-    id: "technical",
-    label: "Technical Questions",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="16 18 22 12 16 6" />
-        <polyline points="8 6 2 12 8 18" />
-      </svg>
-    ),
-  },
-  {
-    id: "behavioral",
-    label: "Behavioral Questions",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      </svg>
-    ),
-  },
-  {
-    id: "roadmap",
-    label: "Road Map",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="3 11 22 2 13 21 11 13 3 11" />
-      </svg>
-    ),
-  },
+const svgProps = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true };
+
+const Icon = {
+  Code: () => <svg {...svgProps}><path d="m16 18 6-6-6-6M8 6l-6 6 6 6" /></svg>,
+  Chat: () => <svg {...svgProps}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>,
+  Map: () => <svg {...svgProps}><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2ZM9 4v14M15 6v14" /></svg>,
+  Target: () => <svg {...svgProps}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></svg>,
+  Bulb: () => <svg {...svgProps}><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3Z" /></svg>,
+  Chevron: () => <svg {...svgProps}><path d="m6 9 6 6 6-6" /></svg>,
+  Check: () => <svg {...svgProps}><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>,
+  Download: () => <svg {...svgProps}><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5" /><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" /></svg>,
+  Arrow: () => <svg {...svgProps}><path d="M19 12H5m5 5-5-5 5-5" /></svg>,
+  Alert: () => <svg {...svgProps}><circle cx="12" cy="12" r="9" /><path d="M12 8v4.5M12 16h.01" /></svg>,
+};
+
+const TABS = [
+  { id: "technical", label: "Technical", icon: Icon.Code, field: "technicalQuestions", unit: "questions" },
+  { id: "behavioral", label: "Behavioral", icon: Icon.Chat, field: "behavioralQuestions", unit: "questions" },
+  { id: "roadmap", label: "Roadmap", icon: Icon.Map, field: "preparationPlan", unit: "days" },
 ];
+
+const SEVERITY = {
+  high: { label: "High priority", level: 3, rank: 0 },
+  medium: { label: "Medium", level: 2, rank: 1 },
+  low: { label: "Low", level: 1, rank: 2 },
+};
+
+const scoreTier = (score) => {
+  if (score >= 80) return { key: "high", label: "Strong match", note: "You're well aligned with this role. Sharpen the details and walk in confident." };
+  if (score >= 60) return { key: "mid", label: "Promising match", note: "A solid foundation with a few gaps worth closing before the interview." };
+  return { key: "low", label: "Needs focus", note: "There are key gaps to close. Your roadmap below shows exactly where to start." };
+};
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+function useCountUp(target, duration = 1600) {
+  const [value, setValue] = useState(() => (prefersReducedMotion() ? target : 0));
+
+  useEffect(() => {
+    if (prefersReducedMotion()) return undefined;
+    let frame;
+    const start = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / duration);
+      setValue(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target, duration]);
+
+  return value;
+}
+
+// 270° gauge with tick marks, a gradient arc and a glowing tip
+const ScoreGauge = ({ score, tier }) => {
+  const value = useCountUp(score);
+  const r = 78;
+  const c = 2 * Math.PI * r;
+  const arc = c * 0.75;
+  const offset = arc * (1 - score / 100);
+  const ticks = Array.from({ length: 41 }, (_, i) => {
+    const angle = ((135 + i * 6.75) * Math.PI) / 180;
+    const inner = i % 5 === 0 ? 92 : 95;
+    return { x1: 100 + inner * Math.cos(angle), y1: 100 + inner * Math.sin(angle), x2: 100 + 99 * Math.cos(angle), y2: 100 + 99 * Math.sin(angle), major: i % 5 === 0, lit: i / 40 <= score / 100 };
+  });
+
+  return (
+    <div className={`rp-gauge rp-gauge--${tier.key}`} role="img" aria-label={`Match score ${score} out of 100, ${tier.label}`}>
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <defs>
+          <linearGradient id="rp-gauge-grad" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0%" className="rp-gauge__stop-a" />
+            <stop offset="100%" className="rp-gauge__stop-b" />
+          </linearGradient>
+        </defs>
+        {ticks.map((t, i) => (
+          <line key={i} {...{ x1: t.x1, y1: t.y1, x2: t.x2, y2: t.y2 }} className={`rp-gauge__tick${t.major ? " is-major" : ""}${t.lit ? " is-lit" : ""}`} style={{ "--i": i }} />
+        ))}
+        <circle className="rp-gauge__track" cx="100" cy="100" r={r} strokeDasharray={`${arc} ${c}`} />
+        <circle
+          className="rp-gauge__value"
+          cx="100"
+          cy="100"
+          r={r}
+          stroke="url(#rp-gauge-grad)"
+          strokeDasharray={`${arc} ${c}`}
+          style={{ "--arc": `${arc}px`, "--offset": `${offset}px` }}
+        />
+        <g className="rp-gauge__tip" style={{ "--angle": `${135 + 270 * (score / 100)}deg` }}>
+          <circle cx={100 + r} cy="100" r="7" className="rp-gauge__tip-halo" />
+          <circle cx={100 + r} cy="100" r="4" className="rp-gauge__tip-dot" />
+        </g>
+      </svg>
+      <div className="rp-gauge__center">
+        <span className="rp-gauge__value-text">{value}<small>%</small></span>
+        <span className="rp-gauge__caption">Match score</span>
+      </div>
+    </div>
+  );
+};
 
 const QuestionCard = ({ item, index }) => {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="q-card">
-      <div className="q-card__header" onClick={() => setOpen((value) => !value)}>
-        <span className="q-card__index">Q{index + 1}</span>
-        <p className="q-card__question">{item.question}</p>
-        <span className={`q-card__chevron ${open ? "q-card__chevron--open" : ""}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </span>
-      </div>
-
-      {open && (
-        <div className="q-card__body">
-          <div className="q-card__section">
-            <span className="q-card__tag q-card__tag--intention">Intention</span>
+    <article className={`rp-q${open ? " is-open" : ""}`} style={{ "--i": index }}>
+      <button className="rp-q__head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <span className="rp-q__num">{String(index + 1).padStart(2, "0")}</span>
+        <span className="rp-q__text">{item.question}</span>
+        <span className="rp-q__chev"><Icon.Chevron /></span>
+      </button>
+      <div className="rp-q__body">
+        <div className="rp-q__inner">
+          <section className="rp-q__block rp-q__block--why">
+            <h4><Icon.Target /> Why they ask this</h4>
             <p>{item.intention}</p>
-          </div>
-
-          <div className="q-card__section">
-            <span className="q-card__tag q-card__tag--answer">Model Answer</span>
+          </section>
+          <section className="rp-q__block rp-q__block--how">
+            <h4><Icon.Bulb /> How to answer</h4>
             <p>{item.answer}</p>
-          </div>
+          </section>
         </div>
-      )}
-    </div>
+      </div>
+    </article>
   );
 };
 
-const RoadMapDay = ({ day }) => (
-  <div className="roadmap-day">
-    <div className="roadmap-day__header">
-      <span className="roadmap-day__badge">Day {day.day}</span>
-      <h3 className="roadmap-day__focus">{day.focus}</h3>
+const RoadmapDay = ({ day, index, last }) => (
+  <li className="rp-day" style={{ "--i": index }}>
+    <div className="rp-day__rail">
+      <span className="rp-day__node">{day.day}</span>
+      {!last && <span className="rp-day__line" />}
     </div>
-
-    <ul className="roadmap-day__tasks">
-      {day.tasks.map((task, index) => (
-        <li key={index}>
-          <span className="roadmap-day__bullet" />
-          {task}
-        </li>
-      ))}
-    </ul>
-  </div>
+    <div className="rp-day__card">
+      <p className="rp-day__eyebrow">Day {day.day}</p>
+      <h3>{day.focus}</h3>
+      <ul>
+        {day.tasks.map((task, i) => (
+          <li key={i}><span className="rp-day__check"><Icon.Check /></span>{task}</li>
+        ))}
+      </ul>
+    </div>
+  </li>
 );
 
 const Interview = () => {
-  const [activeNav, setActiveNav] = useState("technical");
+  const [activeTab, setActiveTab] = useState("technical");
   const [downloadingResume, setDownloadingResume] = useState(false);
   const { report, loading, error, getResumePdf } = useInterview();
   const { interviewId } = useParams();
+  usePageTitle(report?.title ? `${report.title} · Gapwise` : "Interview report · Gapwise");
 
-  if (loading || !report) {
+  if (!loading && !report && error) {
     return (
-      <main className="loading-screen">
-        <div className="loading-screen__content">
-          <h1>Loading...</h1>
+      <div className="interview-page rp-state">
+        <div className="rp-state__card">
+          <span className="rp-state__icon"><Icon.Alert /></span>
+          <h1>We couldn&apos;t open this report</h1>
+          <p>{error}</p>
+          <Link className="rp-btn rp-btn--primary" to="/workspace">Back to workspace</Link>
         </div>
-      </main>
+      </div>
     );
   }
 
-  const scoreColor =
-    report.matchScore >= 80 ? "score--high" : report.matchScore >= 60 ? "score--mid" : "score--low";
+  if (loading || !report) {
+    return <ResumeScanner title={<>Opening your <em>results</em></>} steps={null} />;
+  }
 
-  const activeCount =
-    activeNav === "technical"
-      ? report.technicalQuestions.length
-      : activeNav === "behavioral"
-        ? report.behavioralQuestions.length
-        : report.preparationPlan.length;
+  const score = Math.max(0, Math.min(100, Math.round(Number(report.matchScore) || 0)));
+  const tier = scoreTier(score);
+  const gaps = [...(report.skillGaps || [])].sort((a, b) => (SEVERITY[a.severity]?.rank ?? 3) - (SEVERITY[b.severity]?.rank ?? 3));
+  const highGaps = gaps.filter((g) => g.severity === "high").length;
+  const created = report.createdAt
+    ? new Date(report.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+    : null;
+  const tab = TABS.find((t) => t.id === activeTab);
+  const items = report[tab.field] || [];
 
-  const activeLabel =
-    activeNav === "technical"
-      ? "Technical Questions"
-      : activeNav === "behavioral"
-        ? "Behavioral Questions"
-        : "Preparation Road Map";
+  const stats = [
+    { label: "Technical questions", value: report.technicalQuestions?.length || 0, icon: Icon.Code },
+    { label: "Behavioral questions", value: report.behavioralQuestions?.length || 0, icon: Icon.Chat },
+    { label: "Days in your plan", value: report.preparationPlan?.length || 0, icon: Icon.Map },
+    { label: highGaps ? `Skill gaps · ${highGaps} high` : "Skill gaps", value: gaps.length, icon: Icon.Target },
+  ];
+
+  const downloadResume = async () => {
+    setDownloadingResume(true);
+    try {
+      await getResumePdf(interviewId);
+    } finally {
+      setDownloadingResume(false);
+    }
+  };
 
   return (
     <div className="interview-page">
-      <header className="report-hero">
-        <div className="report-hero__copy">
-          <p className="report-hero__eyebrow">Interview Report</p>
-          <h1>{report.title || "Interview Strategy Report"}</h1>
-          <p className="report-hero__sub">
-            Review guided questions, behavior prep, and a structured roadmap in one focused workspace.
-          </p>
-        </div>
+      <div className="report-ambient report-ambient--mint" aria-hidden="true" />
+      <div className="report-ambient report-ambient--peach" aria-hidden="true" />
 
-        <div className="report-hero__meta">
-          <div className="report-pill">
-            <span className="report-pill__label">Current View</span>
-            <strong>{activeLabel}</strong>
-          </div>
-          <div className="report-pill">
-            <span className="report-pill__label">Items</span>
-            <strong>{activeCount}</strong>
-          </div>
+      <nav className="report-nav">
+        <BrandLogo />
+        <div className="report-nav__actions">
+          <Link className="report-nav__back" to="/workspace"><Icon.Arrow /> Back to workspace</Link>
+          <ThemeToggle />
         </div>
+      </nav>
+
+      <header className="rp-hero">
+        <div className="rp-hero__copy">
+          <h1>{report.title || "Interview strategy report"}</h1>
+          <p className="rp-hero__sub">Your match, the gaps that matter, and a focused plan to close them.</p>
+          {created && <p className="rp-hero__date">Generated on {created}</p>}
+        </div>
+        <button onClick={downloadResume} disabled={downloadingResume} className="rp-btn rp-btn--primary rp-btn--download">
+          {downloadingResume ? <span className="rp-spinner" /> : <Icon.Download />}
+          {downloadingResume ? "Preparing your PDF…" : "Download ATS-Friendly Resume"}
+        </button>
       </header>
 
-      <section className="report-summary">
-        <div className="report-summary__score">
-          <div className="sidebar-card match-score match-score--hero">
-            <p className="match-score__label">Match Score</p>
-            <div className={`match-score__ring ${scoreColor}`}>
-              <span className="match-score__value">{report.matchScore}</span>
-              <span className="match-score__pct">%</span>
-            </div>
-            <p className="match-score__sub">Strong match for this role</p>
-          </div>
-        </div>
+      {error && <p className="rp-error" role="alert"><Icon.Alert /> {error}</p>}
 
-        <div className="report-summary__gaps">
-          <div className="sidebar-card skill-gaps skill-gaps--hero">
-            <p className="skill-gaps__label">Skill Gaps</p>
-            <div className="skill-gaps__list">
-              {report.skillGaps.map((gap, index) => (
-                <span key={index} className={`skill-tag skill-tag--${gap.severity}`}>
-                  {gap.skill}
-                </span>
+      <section className="rp-overview">
+        <div className={`rp-card rp-score rp-score--${tier.key}`}>
+          <ScoreGauge score={score} tier={tier} />
+          <div className="rp-score__body">
+            <span className="rp-tier">{tier.label}</span>
+            <p className="rp-score__note">{tier.note}</p>
+            <div className="rp-stats">
+              {stats.map(({ label, value, icon }) => (
+                <div className="rp-stat" key={label}>
+                  <span className="rp-stat__icon">{icon()}</span>
+                  <strong>{value}</strong>
+                  <span>{label}</span>
+                </div>
               ))}
             </div>
           </div>
         </div>
+
+        <div className="rp-card rp-gaps">
+          <div className="rp-card__head">
+            <h2>Skill gaps</h2>
+            <span className="rp-count">{gaps.length}</span>
+          </div>
+          {gaps.length ? (
+            <ul className="rp-gaps__list">
+              {gaps.map((gap, i) => {
+                const sev = SEVERITY[gap.severity] || SEVERITY.low;
+                return (
+                  <li key={`${gap.skill}-${i}`} className={`rp-gap rp-gap--${gap.severity}`} style={{ "--i": i }}>
+                    <span className="rp-gap__bars" aria-hidden="true">
+                      {[1, 2, 3].map((n) => <span key={n} className={n <= sev.level ? "is-on" : ""} />)}
+                    </span>
+                    <span className="rp-gap__skill">{gap.skill}</span>
+                    <span className="rp-gap__sev">{sev.label}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="rp-empty">No significant gaps detected for this role.</p>
+          )}
+        </div>
       </section>
 
-      <div className="interview-layout">
-        <nav className="interview-nav">
-          <div className="nav-content">
-            <p className="interview-nav__label">Sections</p>
-            {NAV_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                className={`interview-nav__item ${activeNav === item.id ? "interview-nav__item--active" : ""}`}
-                onClick={() => setActiveNav(item.id)}
-              >
-                <span className="interview-nav__icon">{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        <div className="interview-divider" />
-
-        <main className="interview-content">
-          {activeNav === "technical" && (
-            <section>
-              <div className="content-header">
-                <div>
-                  <p className="content-header__eyebrow">Section One</p>
-                  <h2>Technical Questions</h2>
-                </div>
-                <span className="content-header__count">{report.technicalQuestions.length} questions</span>
-              </div>
-
-              <div className="q-list">
-                {report.technicalQuestions.map((question, index) => (
-                  <QuestionCard key={index} item={question} index={index} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {activeNav === "behavioral" && (
-            <section>
-              <div className="content-header">
-                <div>
-                  <p className="content-header__eyebrow">Section Two</p>
-                  <h2>Behavioral Questions</h2>
-                </div>
-                <span className="content-header__count">{report.behavioralQuestions.length} questions</span>
-              </div>
-
-              <div className="q-list">
-                {report.behavioralQuestions.map((question, index) => (
-                  <QuestionCard key={index} item={question} index={index} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {activeNav === "roadmap" && (
-            <section>
-              <div className="content-header">
-                <div>
-                  <p className="content-header__eyebrow">Section Three</p>
-                  <h2>Preparation Road Map</h2>
-                </div>
-                <span className="content-header__count">{report.preparationPlan.length}-day plan</span>
-              </div>
-
-              <div className="roadmap-list">
-                {report.preparationPlan.map((day) => (
-                  <RoadMapDay key={day.day} day={day} />
-                ))}
-              </div>
-            </section>
-          )}
-        </main>
-      </div>
-
-      <section className="report-download-panel">
-        <div className="report-download-panel__copy">
-          <p className="report-download-panel__eyebrow">Export</p>
-          <h2>Download your resume package</h2>
-          <p>
-            Get the generated resume version for this GapWise report in one click.
-          </p>
+      <section className="rp-card rp-content">
+        <div className="rp-tabs" role="tablist" aria-label="Report sections">
+          {TABS.map(({ id, label, icon, field }) => (
+            <button
+              key={id}
+              role="tab"
+              aria-selected={activeTab === id}
+              className={`rp-tab${activeTab === id ? " is-active" : ""}`}
+              onClick={() => setActiveTab(id)}
+            >
+              {icon()}
+              <span>{label}</span>
+              <span className="rp-tab__count">{report[field]?.length || 0}</span>
+            </button>
+          ))}
         </div>
 
-        <button
-          onClick={async () => {
-            setDownloadingResume(true);
-            try {
-              await getResumePdf(interviewId);
-            } finally {
-              setDownloadingResume(false);
-            }
-          }}
-          disabled={downloadingResume}
-          className="report-download-btn report-download-btn--hero"
-        >
-          <svg height="0.95rem" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M10.6144 17.7956 11.492 15.7854C12.2731 13.9966 13.6789 12.5726 15.4325 11.7942L17.8482 10.7219C18.6162 10.381 18.6162 9.26368 17.8482 8.92277L15.5079 7.88394C13.7092 7.08552 12.2782 5.60881 11.5105 3.75894L10.6215 1.61673C10.2916.821765 9.19319.821767 8.8633 1.61673L7.97427 3.75892C7.20657 5.60881 5.77553 7.08552 3.97685 7.88394L1.63658 8.92277C.868537 9.26368.868536 10.381 1.63658 10.7219L4.0523 11.7942C5.80589 12.5726 7.21171 13.9966 7.99275 15.7854L8.8704 17.7956C9.20776 18.5682 10.277 18.5682 10.6144 17.7956ZM19.4014 22.6899 19.6482 22.1242C20.0882 21.1156 20.8807 20.3125 21.8695 19.8732L22.6299 19.5353C23.0412 19.3526 23.0412 18.7549 22.6299 18.5722L21.9121 18.2532C20.8978 17.8026 20.0911 16.9698 19.6586 15.9269L19.4052 15.3156C19.2285 14.8896 18.6395 14.8896 18.4628 15.3156L18.2094 15.9269C17.777 16.9698 16.9703 17.8026 15.956 18.2532L15.2381 18.5722C14.8269 18.7549 14.8269 19.3526 15.2381 19.5353L15.9985 19.8732C16.9874 20.3125 17.7798 21.1156 18.2198 22.1242L18.4667 22.6899C18.6473 23.104 19.2207 23.104 19.4014 22.6899Z" />
-          </svg>
-          {downloadingResume ? "Downloading resume..." : "Download Resume"}
-        </button>
-      </section>
+        <div className="rp-panel" key={activeTab} role="tabpanel">
+          <div className="rp-panel__head">
+            <h2>
+              {activeTab === "technical" && "Technical questions"}
+              {activeTab === "behavioral" && "Behavioral questions"}
+              {activeTab === "roadmap" && "Your preparation roadmap"}
+            </h2>
+            <p>
+              {activeTab === "roadmap"
+                ? `A ${items.length}-day plan built around your gaps.`
+                : `${items.length} ${tab.unit} — tap any one to see why it's asked and how to answer.`}
+            </p>
+          </div>
 
-      {error && <p className="form-error form-error--report">{error}</p>}
+          {activeTab === "roadmap" ? (
+            <ol className="rp-roadmap">
+              {items.map((day, i) => <RoadmapDay key={day.day ?? i} day={day} index={i} last={i === items.length - 1} />)}
+            </ol>
+          ) : (
+            <div className="rp-qlist">
+              {items.map((q, i) => <QuestionCard key={i} item={q} index={i} />)}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 };

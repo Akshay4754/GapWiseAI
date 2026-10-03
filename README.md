@@ -163,7 +163,7 @@ docker-compose up --build
 Containers expose
 
 - Frontend on http://localhost:3000
-- Backend on http://localhost:5000
+- Backend on http://localhost:3000
 - MongoDB on localhost:27017
 
 ### Build Containers Individually

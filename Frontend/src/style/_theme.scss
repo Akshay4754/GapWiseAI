@@ -1,0 +1,49 @@
+// Shared dark-theme palette. Each page stylesheet adds its own
+// `:root[data-theme="dark"] { ... }` block using these tokens.
+
+$d-bg: #0b1210;
+$d-surface: #111a16;
+$d-surface-2: #16211c;
+$d-surface-3: #1c2a23;
+$d-glass: rgba(17, 26, 22, .74);
+$d-tint: rgba(255, 255, 255, .03);
+
+$d-border: rgba(160, 220, 185, .1);
+$d-border-strong: rgba(160, 220, 185, .2);
+$d-hairline: rgba(255, 255, 255, .07);
+
+$d-heading: #eef5f0;
+$d-text: #e7efe9;
+$d-soft: #b5c3ba;
+$d-muted: #93a39a;
+$d-faint: #7a8a81; // ≥4.5:1 on the dark page and card backgrounds
+
+$d-mint: #8fd6a8;
+$d-mint-strong: #7fd1a0;
+$d-mint-deep: #4fae78;
+$d-wash: rgba(127, 209, 160, .12);
+$d-wash-soft: rgba(127, 209, 160, .06);
+
+$d-danger: #f29484;
+$d-danger-wash: rgba(242, 148, 132, .1);
+$d-danger-border: rgba(242, 148, 132, .28);
+
+$d-shadow: 0 30px 70px -30px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .04);
+$d-shadow-sm: 0 14px 30px -16px rgba(0, 0, 0, .65);
+
+$d-page-bg:
+  radial-gradient(circle at 3% 8%, rgba(72, 184, 130, .13), transparent 30%),
+  radial-gradient(circle at 97% 12%, rgba(240, 150, 120, .07), transparent 22%),
+  linear-gradient(135deg, #0c1411 0%, #0a110e 55%, #100f0c 100%);
+
+// Glassy dark spheres replacing the pastel 3D orbs
+$d-orb-mint: radial-gradient(circle at 35% 30%, #2f5f47 0, #18342a 48%, #0e2018 100%);
+$d-orb-peach: radial-gradient(circle at 35% 28%, #6a4335, #43281f 60%, #2a1912);
+$d-orb-shadow: inset 16px 16px 32px rgba(170, 255, 205, .08), inset -20px -22px 35px rgba(0, 0, 0, .4), 0 0 80px rgba(72, 184, 130, .1);
+
+// Primary actions flip from deep green + white text to mint + dark text
+@mixin d-primary {
+  color: #062014;
+  background: linear-gradient(135deg, #9ae6b8, #4fae78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 14px 30px -14px rgba(79, 174, 120, .55);
+}

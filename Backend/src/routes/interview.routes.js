@@ -50,16 +50,4 @@ interviewRouter.post(
   interviewController.generateResumePdfController,
 );
 
-/**
- * @route POST /api/interview/ask-from-pdf
- * @description upload a pdf and ask a question based on the document content.
- * @access private
- */
-interviewRouter.post(
-  "/ask-from-pdf",
-  authMiddleware.authUser,
-  upload.single("pdf"),
-  interviewController.askFromPdfController,
-);
-
 module.exports = interviewRouter;

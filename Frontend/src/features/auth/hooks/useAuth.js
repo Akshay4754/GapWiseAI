@@ -50,7 +50,8 @@ export const useAuth = () => {
         setLoading(true)
         try {
             await logout()
-        } catch (err) {
+        } catch {
+            // Ignore logout errors — token is cleared locally regardless.
         } finally {
             localStorage.removeItem("token")
             setUser(null)
@@ -69,7 +70,7 @@ export const useAuth = () => {
                     setUser(null)
                     localStorage.removeItem("token")
                 }
-            } catch (err) {
+            } catch {
                 setUser(null)
                 localStorage.removeItem("token")
             } finally {

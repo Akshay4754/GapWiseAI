@@ -1,7 +1,10 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router";
-import "../auth.form.scss";
+import { Navigate, useNavigate, Link } from "react-router";
 import { useAuth } from "../hooks/useAuth";
+import AuthLayout from "../components/AuthLayout.jsx";
+import AuthField from "../components/AuthField.jsx";
+import { UserIcon, MailIcon, LockIcon, ArrowIcon, AlertIcon } from "../components/AuthIcons.jsx";
+import { usePageTitle } from "../../../hooks/usePageTitle.js";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -9,109 +12,91 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  // Local flag so the button only shows "busy" for the user's own submit,
+  // not while the app checks for an existing session on first load
+  const [submitting, setSubmitting] = useState(false);
 
-  const { loading, handleRegister } = useAuth();
+  const { loading, user, handleRegister } = useAuth();
+  usePageTitle("Create account · Gapwise");
+
+  if (!loading && user) {
+    return <Navigate to="/workspace" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSubmitting(true);
 
     try {
       await handleRegister({ username, email, password });
-      navigate("/");
+      navigate("/workspace");
     } catch (err) {
       setError(err.message || "Registration failed. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <main className="auth-shell">
-      <div className="auth-shell__ambient" />
-      <div className="auth-shell__grid" />
-
-      <section className="auth-shell__panel auth-shell__panel--intel">
-        <div className="auth-intel">
-          <p className="auth-kicker">Identity Provisioning</p>
-          <h1>Open your workspace.</h1>
-          <p className="auth-intel__lede">
-            Create a private AI workspace for reports, resumes, and PDF analysis.
-          </p>
-
-          <div className="auth-tags">
-            <span>Fast Setup</span>
-            <span>Private Sessions</span>
-            <span>Focused Prep</span>
-          </div>
+    <AuthLayout
+      title={<>Make your next move <em>clearer.</em></>}
+      lede="Start a personal career workspace for insights, prep, and momentum."
+    >
+      <div className="auth-card">
+        <div className="auth-card__header">
+          <h2>Open a new workspace</h2>
+          <p>Create your account and turn your experience into a practical plan.</p>
         </div>
-      </section>
 
-      <section className="auth-shell__panel auth-shell__panel--form">
-        <div className="auth-card">
-          <div className="auth-card__header">
-            <p className="auth-kicker">Create Access</p>
-            <h2>Open a new workspace</h2>
-            <p>
-              Set up your identity and start running secure interview analysis.
-            </p>
-          </div>
+        <form onSubmit={handleSubmit}>
+          <AuthField
+            id="username"
+            label="Username"
+            icon={<UserIcon />}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Choose a display name"
+            autoComplete="username"
+            required
+          />
+          <AuthField
+            id="email"
+            label="Email"
+            type="email"
+            icon={<MailIcon />}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+            required
+          />
+          <AuthField
+            id="password"
+            label="Password"
+            type="password"
+            icon={<LockIcon />}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Create a password"
+            autoComplete="new-password"
+            required
+          />
 
-          <form onSubmit={handleSubmit}>
-            <div className="input-group">
-              <label htmlFor="username">Username</label>
-              <input
-                value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value);
-                }}
-                type="text"
-                id="username"
-                name="username"
-                placeholder="Choose operator name"
-              />
-            </div>
+          {error && <p className="auth-error" role="alert"><AlertIcon /> {error}</p>}
 
-            <div className="input-group">
-              <label htmlFor="email">Email</label>
-              <input
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                }}
-                type="email"
-                id="email"
-                name="email"
-                placeholder="operator@company.com"
-              />
-            </div>
+          <button className="auth-submit" disabled={submitting}>
+            {submitting ? <span className="auth-spinner" /> : null}
+            {submitting ? "Creating your workspace…" : "Create workspace"}
+            {!submitting && <ArrowIcon />}
+          </button>
+        </form>
 
-            <div className="input-group">
-              <label htmlFor="password">Password</label>
-              <input
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                }}
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Set secure passphrase"
-              />
-            </div>
-
-            {error && <p className="auth-error">{error}</p>}
-
-            <button className="button primary-button auth-button" disabled={loading}>
-              {loading ? "Provisioning..." : "Create Workspace"}
-            </button>
-          </form>
-
-          <div className="auth-card__footer">
-            <span>Already active?</span>
-            <Link to="/login">Return to sign in</Link>
-          </div>
-        </div>
-      </section>
-    </main>
+        <p className="auth-card__switch">
+          Already have an account? <Link to="/login">Sign in</Link>
+        </p>
+      </div>
+    </AuthLayout>
   );
 };
 

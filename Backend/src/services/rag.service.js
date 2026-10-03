@@ -132,10 +132,20 @@ async function getPineconeIndex() {
 
 async function extractPdfTextFromBuffer(buffer) {
   if (pdfParse?.PDFParse) {
-    const result = await new pdfParse.PDFParse(
-      Uint8Array.from(buffer),
-    ).getText();
-    return result?.text?.trim() || "";
+    try {
+      // Keep hyperlink targets (e.g. a "LinkedIn" label linking to a profile) as
+      // Markdown links like [LinkedIn](https://...), so the URLs reach the AI
+      const result = await new pdfParse.PDFParse(
+        Uint8Array.from(buffer),
+      ).getText({ parseHyperlinks: true });
+      return result?.text?.trim() || "";
+    } catch (error) {
+      console.warn("[PDF] Hyperlink-aware extraction failed, using plain text:", error.message);
+      const result = await new pdfParse.PDFParse(
+        Uint8Array.from(buffer),
+      ).getText();
+      return result?.text?.trim() || "";
+    }
   }
 
   const result = await pdfParse(buffer);
@@ -246,23 +256,6 @@ async function retrieveRelevantResumeChunks(
   });
 }
 
-async function retrieveRelevantPdfChunks(
-  userId,
-  query,
-  topK = 5,
-  options = {},
-) {
-  return retrieveRelevantChunks({
-    query,
-    topK,
-    filter: {
-      userId,
-      sourceId: options.sourceId,
-      docType: options.docType || "pdf-qa",
-    },
-  });
-}
-
 async function cleanupUserCollection() {
   return true;
 }
@@ -274,7 +267,6 @@ module.exports = {
   initializeResumeCollection,
   indexTextDocument,
   retrieveRelevantChunks,
-  retrieveRelevantPdfChunks,
   retrieveRelevantResumeChunks,
   cleanupUserCollection,
   splitTextIntoDocuments,

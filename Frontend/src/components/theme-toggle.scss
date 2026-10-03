@@ -1,0 +1,78 @@
+$ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+
+.theme-toggle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(62, 101, 73, .16);
+  border-radius: 50%;
+  color: #c98a1e;
+  background: rgba(255, 255, 255, .7);
+  box-shadow: 0 1px 2px rgba(30, 50, 38, .06), inset 0 1px 0 rgba(255, 255, 255, .9);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color .3s ease, background .3s ease, box-shadow .3s ease, transform .2s ease;
+
+  &:hover { transform: translateY(-1px); border-color: rgba(62, 101, 73, .3); box-shadow: 0 8px 18px -8px rgba(45, 80, 58, .4); }
+  &:active { transform: scale(.92); }
+  &:focus-visible { outline: 2px solid #78b38a; outline-offset: 3px; }
+
+  svg {
+    position: absolute;
+    width: 1.15rem;
+    height: 1.15rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform .6s $ease-spring, opacity .35s ease;
+  }
+}
+
+.theme-toggle__sun circle { fill: currentColor; fill-opacity: .18; }
+.theme-toggle__rays { transform-origin: 12px 12px; transition: transform .6s $ease-spring; }
+.theme-toggle__moon { opacity: 0; transform: rotate(-90deg) scale(.4); }
+.theme-toggle__moon path:first-child { fill: currentColor; fill-opacity: .15; }
+.theme-toggle__star { fill: currentColor; stroke: none; }
+
+.theme-toggle:hover .theme-toggle__rays { transform: rotate(45deg); }
+
+// Dark state: sun spins away, moon swings in
+.theme-toggle.is-dark {
+  color: #b9f0cf;
+  border-color: rgba(160, 220, 185, .18);
+  background: rgba(255, 255, 255, .04);
+  box-shadow: 0 0 0 0 rgba(127, 209, 160, 0), inset 0 1px 0 rgba(255, 255, 255, .06);
+
+  &:hover { border-color: rgba(160, 220, 185, .35); box-shadow: 0 0 18px -2px rgba(127, 209, 160, .35); }
+
+  .theme-toggle__sun { opacity: 0; transform: rotate(90deg) scale(.4); }
+  .theme-toggle__moon { opacity: 1; transform: none; }
+  .theme-toggle__star { animation: theme-twinkle 3s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  &:hover .theme-toggle__moon { transform: rotate(-14deg); }
+}
+
+// Floating variant for pages without a nav bar
+.theme-toggle--floating {
+  position: absolute;
+  z-index: 10;
+  top: 1.25rem;
+  right: 1.25rem;
+  backdrop-filter: blur(10px);
+}
+
+@keyframes theme-twinkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .35; transform: scale(.6); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle svg, .theme-toggle__rays { transition: none; }
+  .theme-toggle__star { animation: none !important; }
+}

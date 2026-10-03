@@ -1,498 +1,227 @@
-import React, { useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import { useAuth } from "../../auth/hooks/useAuth.js";
 import "../style/home.scss";
-import { useInterview } from "../hooks/useInterview.js";
-import { askQuestionFromPdf } from "../services/interview.api.js";
-import { useNavigate } from "react-router";
+import BrandLogo from "../../../components/BrandLogo.jsx";
+import ThemeToggle from "../../../components/ThemeToggle.jsx";
+import { usePageTitle } from "../../../hooks/usePageTitle.js";
 
-const Home = () => {
-  const { loading, error, setError, generateReport, reports } = useInterview();
-  const [jobDescription, setJobDescription] = useState("");
-  const [selfDescription, setSelfDescription] = useState("");
-  const [selectedResumeName, setSelectedResumeName] = useState("");
-  const [selectedPdfName, setSelectedPdfName] = useState("");
-  const [pdfQuestion, setPdfQuestion] = useState("");
-  const [pdfAnswer, setPdfAnswer] = useState("");
-  const [pdfSupportingPoints, setPdfSupportingPoints] = useState([]);
-  const [pdfSources, setPdfSources] = useState([]);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfError, setPdfError] = useState("");
-  const resumeInputRef = useRef();
-  const pdfInputRef = useRef();
+const Arrow = () => (
+  <svg viewBox="0 0 20 20" aria-hidden="true">
+    <path d="M4 10h11m-5-5 5 5-5 5" />
+  </svg>
+);
 
-  const navigate = useNavigate();
+const Check = () => (
+  <svg viewBox="0 0 20 20" aria-hidden="true">
+    <path d="m4 10 4 4 8-8" />
+  </svg>
+);
 
-  const validatePdfFile = (file, setFileName, setLocalError, eventTarget) => {
-    if (!file) {
-      setFileName("");
-      return false;
+const Spark = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z" />
+    <path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z" />
+  </svg>
+);
+
+const ScoreVisual = () => (
+  <div className="fv-card fv-score">
+    <div className="fv-ring" style={{ "--p": 86 }}><span>86</span><small>match</small></div>
+    <div className="fv-bars">
+      <small>Strengths for this role</small>
+      <i style={{ "--w": "88%" }} />
+      <i style={{ "--w": "72%" }} />
+      <i style={{ "--w": "54%" }} />
+    </div>
+    <span className="fv-chip"><Check /> 3 quick wins</span>
+  </div>
+);
+
+const PlanVisual = () => (
+  <div className="fv-card fv-plan">
+    <div className="fv-day is-done"><span className="fv-node"><Check /></span><div><small>Day 1</small><strong>Refresh core concepts</strong></div></div>
+    <div className="fv-day is-active"><span className="fv-node" /><div><small>Day 2</small><strong>Mock technical interview</strong><i /></div></div>
+    <div className="fv-day"><span className="fv-node" /><div><small>Day 3</small><strong>Practice behavioral stories</strong></div></div>
+  </div>
+);
+
+const features = [
+  {
+    number: "01",
+    title: "Resume intelligence",
+    text: "Get a clear match score and the skill gaps that matter most for the role you want next.",
+    color: "mint",
+    Visual: ScoreVisual,
+  },
+  {
+    number: "02",
+    title: "Your career roadmap",
+    text: "Turn your strengths and gaps into a focused, day-by-day plan you can actually follow.",
+    color: "lavender",
+    Visual: PlanVisual,
+  },
+];
+
+// Fades sections in as they scroll into view
+function useReveal() {
+  useEffect(() => {
+    const els = document.querySelectorAll(".reveal");
+    if (!("IntersectionObserver" in window)) {
+      els.forEach((el) => el.classList.add("is-visible"));
+      return undefined;
     }
-
-    const isPdfName = file.name?.toLowerCase().endsWith(".pdf");
-    if (!isPdfName) {
-      setFileName("");
-      setLocalError("Please upload a PDF file.");
-      eventTarget.value = "";
-      return false;
-    }
-
-    const maxFileSizeBytes = 5 * 1024 * 1024;
-    if (file.size > maxFileSizeBytes) {
-      setFileName("");
-      setLocalError("PDF file must be 5MB or smaller.");
-      eventTarget.value = "";
-      return false;
-    }
-
-    setLocalError("");
-    setFileName(file.name);
-    return true;
-  };
-
-  const handleResumeChange = (event) => {
-    const file = event.target.files?.[0];
-    validatePdfFile(file, setSelectedResumeName, setError, event.target);
-  };
-
-  const handlePdfChange = (event) => {
-    const file = event.target.files?.[0];
-    validatePdfFile(file, setSelectedPdfName, setPdfError, event.target);
-  };
-
-  const handleGenerateReport = async () => {
-    const resumeFile = resumeInputRef.current.files[0];
-
-    if (!resumeFile && !selfDescription.trim()) {
-      setError("Upload a resume or add a self-description to continue.");
-      return;
-    }
-
-    try {
-      const data = await generateReport({
-        jobDescription,
-        selfDescription,
-        resumeFile,
-      });
-      if (data?._id) {
-        navigate(`/interview/${data._id}`);
-      }
-    } catch {
-      // Error state is handled by interview context and rendered below the action button.
-    }
-  };
-
-  const handleAskFromPdf = async () => {
-    const pdfFile = pdfInputRef.current.files[0];
-
-    if (!pdfFile) {
-      setPdfError("Upload a PDF document to ask questions from it.");
-      return;
-    }
-
-    if (!pdfQuestion.trim()) {
-      setPdfError("Enter a question for the uploaded PDF.");
-      return;
-    }
-
-    setPdfLoading(true);
-    setPdfError("");
-    setPdfAnswer("");
-    setPdfSupportingPoints([]);
-    setPdfSources([]);
-
-    try {
-      const data = await askQuestionFromPdf({ pdfFile, question: pdfQuestion });
-      setPdfAnswer(data?.answer || "No answer could be generated.");
-      setPdfSupportingPoints(
-        Array.isArray(data?.supportingPoints) ? data.supportingPoints : [],
-      );
-      setPdfSources(Array.isArray(data?.sources) ? data.sources : []);
-    } catch (err) {
-      setPdfError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Failed to analyze the PDF.",
-      );
-    } finally {
-      setPdfLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <main className="loading-screen">
-        <div className="loading-screen__content loading-screen__content--analysis">
-          <p>Analysing your resume...</p>
-          <h1>Loading your interview plan...</h1>
-        </div>
-      </main>
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add("is-visible");
+          io.unobserve(e.target);
+        }
+      }),
+      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" },
     );
-  }
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+}
 
+function ScoreRing() {
   return (
-    <div className="home-page">
-      <header className="page-header">
-        <div className="page-header__eyebrow">GapWise Workspace</div>
-        <div className="page-header__content">
-          <div className="page-header__copy">
-            <h1>
-              Build sharper interview plans and learn smarter from PDFs.
-            </h1>
-            <p>
-              One private workspace for resume analysis, role alignment, and
-              document-based answers powered by the same RAG flow.
-            </p>
-          </div>
-
-          <div className="page-header__stats">
-            <div className="workspace-pill">
-              <span className="workspace-pill__label">Mode</span>
-              <strong>Secure AI Prep</strong>
-            </div>
-            <div className="workspace-pill">
-              <span className="workspace-pill__label">Inputs</span>
-              <strong>Resume, Role, PDF</strong>
-            </div>
-            <div className="workspace-pill">
-              <span className="workspace-pill__label">Output</span>
-              <strong>Interview-Ready Report</strong>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="home-workspace">
-        <section className="interview-card">
-          <div className="workspace-section-heading">
-            <div>
-              <p className="workspace-section-heading__eyebrow">
-                Interview Strategy
-              </p>
-              <h2>Create your main analysis</h2>
-              <p className="workspace-section-heading__sub">
-                Map the role, add your profile, and generate a focused preparation plan.
-              </p>
-            </div>
-            <span className="badge badge--best">Primary Flow</span>
-          </div>
-
-          <div className="interview-card__body">
-            <div className="interview-grid">
-              <div className="panel panel--left">
-                <div className="panel__header">
-                  <span className="panel__step">01</span>
-                  <div className="panel__title-group">
-                    <h2>Target Job Description</h2>
-                    <p>Paste the role brief you want to prepare for.</p>
-                  </div>
-                  <span className="badge badge--required">Required</span>
-                </div>
-                <textarea
-                  value={jobDescription}
-                  onChange={(e) => {
-                    setJobDescription(e.target.value);
-                  }}
-                  className="panel__textarea"
-                  placeholder={`Paste the full job description here...\ne.g. 'Senior Frontend Engineer at Google requires proficiency in React, TypeScript, and large-scale system design...'`}
-                  maxLength={5000}
-                />
-                <div className="char-counter">
-                  {jobDescription.length} / 5000 chars
-                </div>
-              </div>
-
-              <div className="panel panel--right">
-                <div className="panel__header">
-                  <span className="panel__step">02</span>
-                  <div className="panel__title-group">
-                    <h2>Your Profile</h2>
-                    <p>Upload your resume or write a quick self-summary.</p>
-                  </div>
-                </div>
-
-                <div className="profile-stack">
-                  <div className="upload-section">
-                    <label className="section-label">
-                      Upload Resume
-                      <span className="badge badge--best">Best Results</span>
-                    </label>
-                    <label className="dropzone" htmlFor="resume">
-                      <span className="dropzone__icon">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="28"
-                          height="28"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="16 16 12 12 8 16" />
-                          <line x1="12" y1="12" x2="12" y2="21" />
-                          <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
-                        </svg>
-                      </span>
-                      <p className="dropzone__title">
-                        Click to upload or drag &amp; drop
-                      </p>
-                      <p className="dropzone__subtitle">PDF only (Max 5MB)</p>
-                      <input
-                        ref={resumeInputRef}
-                        onChange={handleResumeChange}
-                        hidden
-                        type="file"
-                        id="resume"
-                        name="resume"
-                        accept=".pdf,application/pdf"
-                      />
-                    </label>
-                    {selectedResumeName && (
-                      <p className="dropzone__subtitle">
-                        Selected: {selectedResumeName}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="or-divider">
-                    <span>OR</span>
-                  </div>
-
-                  <div className="self-description">
-                    <label className="section-label" htmlFor="selfDescription">
-                      Quick Self-Description
-                    </label>
-                    <textarea
-                      onChange={(e) => {
-                        setSelfDescription(e.target.value);
-                      }}
-                      id="selfDescription"
-                      name="selfDescription"
-                      className="panel__textarea panel__textarea--short"
-                      placeholder="Briefly describe your experience, key skills, and years of experience if you don't have a resume handy..."
-                    />
-                  </div>
-
-                  <div className="info-box">
-                    <span className="info-box__icon">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <line
-                          x1="12"
-                          y1="8"
-                          x2="12"
-                          y2="12"
-                          stroke="#1a1f27"
-                          strokeWidth="2"
-                        />
-                        <line
-                          x1="12"
-                          y1="16"
-                          x2="12.01"
-                          y2="16"
-                          stroke="#1a1f27"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                    </span>
-                    <p>
-                      Either a <strong>Resume</strong> or a{" "}
-                      <strong>Self Description</strong> is required to generate a
-                      personalized plan.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="interview-card__footer">
-            <span className="footer-info">
-              AI-Powered Strategy Generation &bull; Approx 30s
-            </span>
-            <button onClick={handleGenerateReport} className="generate-btn">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
-              </svg>
-              Generate My Interview Strategy
-            </button>
-          </div>
-          {error && <p className="form-error">{error}</p>}
-        </section>
-
-        <section className="pdf-assistant-card">
-          <div className="pdf-assistant-card__header">
-            <div>
-              <p className="pdf-assistant-card__eyebrow">Ask From PDF</p>
-              <h2>Ask From PDF</h2>
-              <p className="pdf-assistant-card__sub">
-                Upload a document and get answers grounded in its actual
-                content.
-              </p>
-            </div>
-            <span className="badge badge--best">RAG Assistant</span>
-          </div>
-
-          <div className="pdf-assistant-card__body">
-            <div className="pdf-flow">
-              <label className="upload-section upload-section--compact">
-                <span className="section-label">Upload PDF</span>
-                <label className="dropzone dropzone--compact" htmlFor="pdfFile">
-                  <span className="dropzone__icon">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="28"
-                      height="28"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M12 3v12" />
-                      <path d="M7 8l5-5 5 5" />
-                      <path d="M5 21h14" />
-                    </svg>
-                  </span>
-                  <p className="dropzone__title">Drop a PDF or browse</p>
-                  <p className="dropzone__subtitle">
-                    Question answering over document context
-                  </p>
-                  <input
-                    ref={pdfInputRef}
-                    onChange={handlePdfChange}
-                    hidden
-                    type="file"
-                    id="pdfFile"
-                    name="pdfFile"
-                    accept=".pdf,application/pdf"
-                  />
-                </label>
-                {selectedPdfName && (
-                  <p className="dropzone__subtitle">
-                    Selected: {selectedPdfName}
-                  </p>
-                )}
-              </label>
-
-              <div className="self-description">
-                <label className="section-label" htmlFor="pdfQuestion">
-                  Your Question
-                </label>
-                <textarea
-                  onChange={(e) => setPdfQuestion(e.target.value)}
-                  id="pdfQuestion"
-                  name="pdfQuestion"
-                  className="panel__textarea panel__textarea--short pdf-question"
-                  placeholder="Ask anything about the uploaded PDF, for example: What are the main deliverables?"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={handleAskFromPdf}
-              disabled={pdfLoading}
-              className="generate-btn generate-btn--full"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
-              </svg>
-              {pdfLoading ? "Analyzing PDF..." : "Ask from PDF"}
-            </button>
-
-            {pdfError && <p className="form-error">{pdfError}</p>}
-
-            {(pdfAnswer ||
-              pdfSupportingPoints.length > 0 ||
-              pdfSources.length > 0) && (
-              <div className="pdf-answer-card">
-                <p className="pdf-answer-card__label">Answer</p>
-                <p className="pdf-answer-card__text">{pdfAnswer}</p>
-
-                {pdfSupportingPoints.length > 0 && (
-                  <div className="pdf-answer-card__group">
-                    <p className="pdf-answer-card__subheading">
-                      Supporting points
-                    </p>
-                    <ul className="pdf-answer-card__list">
-                      {pdfSupportingPoints.map((point, index) => (
-                        <li key={index}>{point}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {pdfSources.length > 0 && (
-                  <div className="pdf-answer-card__group">
-                    <p className="pdf-answer-card__subheading">
-                      Retrieved context
-                    </p>
-                    <div className="pdf-answer-card__sources">
-                      {pdfSources.map((source, index) => (
-                        <span key={index} className="source-pill">
-                          {source.fileName || "Uploaded PDF"}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
+    <div className="score-ring" aria-label="Resume score 78 out of 100">
+      <div>
+        <strong>78</strong>
+        <span>/ 100</span>
       </div>
-
-      {reports.length > 0 && (
-        <section className="recent-reports">
-          <h2>My Recent Interview Plans</h2>
-          <ul className="reports-list">
-            {reports.map((report) => (
-              <li
-                key={report._id}
-                className="report-item"
-                onClick={() => navigate(`/interview/${report._id}`)}
-              >
-                <h3>{report.title || "Untitled Position"}</h3>
-                <p className="report-meta">
-                  Generated on {new Date(report.createdAt).toLocaleDateString()}
-                </p>
-                <p
-                  className={`match-score ${report.matchScore >= 80 ? "score--high" : report.matchScore >= 60 ? "score--mid" : "score--low"}`}
-                >
-                  Match Score: {report.matchScore}%
-                </p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <footer className="page-footer">
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Service</a>
-        <a href="#">Help Center</a>
-      </footer>
     </div>
   );
-};
+}
+
+function Home() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
+  useReveal();
+  usePageTitle("Gapwise — Your career, made clearer.");
+
+  return (
+    <main className="site-shell">
+      <nav className="topbar">
+        <BrandLogo />
+        <div className="topbar-actions">
+          <div className={`nav-links ${mobileOpen ? "is-open" : ""}`}>
+            <a href="#how-it-works" onClick={() => setMobileOpen(false)}>How it works</a>
+            <a href="#tools" onClick={() => setMobileOpen(false)}>Features</a>
+            {user ? (
+              <Link className="nav-login" to="/workspace" onClick={() => setMobileOpen(false)}>Workspace</Link>
+            ) : (
+              <Link className="nav-login" to="/login" onClick={() => setMobileOpen(false)}>Log in</Link>
+            )}
+            {user ? (
+              <Link className="button button-dark nav-cta" to="/workspace" onClick={() => setMobileOpen(false)}>Open workspace <Arrow /></Link>
+            ) : (
+              <Link className="button button-dark nav-cta" to="/register" onClick={() => setMobileOpen(false)}>Get started <Arrow /></Link>
+            )}
+          </div>
+          <ThemeToggle />
+          <button className="menu-toggle" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle navigation" aria-expanded={mobileOpen}>
+            <span /><span /><span />
+          </button>
+        </div>
+      </nav>
+
+      <section className="hero">
+        <div className="hero-copy">
+         <h1>Your career,<br /><em>made clearer.</em></h1>
+          <p className="hero-lede">Gapwise turns your resume into a roadmap. Get honest insights, build the right skills, and move toward work you&apos;re excited about.</p>
+          <div className="hero-actions">
+            <Link className="button button-dark button-large" to="/workspace">Analyze my resume <Arrow /></Link>
+            <a className="text-link" href="#how-it-works">See how it works <Arrow /></a>
+          </div>
+          <div className="trust-row">
+            <div className="avatar-stack"><span>AM</span><span>JR</span><span>SK</span><span>+9k</span></div>
+            <p><strong>10,000+ job seekers</strong><br />are getting unstuck with Gapwise</p>
+          </div>
+        </div>
+        <div className="hero-art" aria-label="Resume analysis preview">
+          <div className="hero-glow" />
+          <div className="blob blob-one" />
+          <div className="blob blob-two" />
+          <div className="orb orb-left" />
+          <div className="orb orb-right" />
+          <div className="hero-spark spark-one" aria-hidden="true" />
+          <div className="hero-spark spark-two" aria-hidden="true" />
+          <div className="hero-note note-top"><span className="note-icon mint-icon"><Check /></span><span><strong>Clear next steps</strong><small>Skills matched to your goals</small></span></div>
+          <div className="resume-card">
+            <div className="resume-card-top"><span>GAPWISE ANALYSIS</span><span className="mini-chip">AI powered</span></div>
+            <div className="resume-profile"><div className="profile-photo">JD</div><div><strong>Jordan Davis</strong><span>Product designer</span></div><span className="match-badge">92% match</span></div>
+            <div className="resume-line line-long" /><div className="resume-line line-medium" />
+            <div className="resume-body"><div><small>Resume score</small><ScoreRing /></div><div className="skill-bars"><small>Skills that stand out</small><div><span>Product strategy</span><i style={{ "--bar": "94%" }} /></div><div><span>User research</span><i style={{ "--bar": "82%" }} /></div><div><span>Data storytelling</span><i style={{ "--bar": "68%" }} /></div></div></div>
+            <div className="resume-footer"><span><b>3</b> strengths found</span><span><b>5</b> growth areas</span></div>
+          </div>
+          <div className="hero-note note-bottom"><span className="note-icon peach-icon"><Spark /></span><span><strong>Roadmap unlocked</strong><small>12 weeks to your next role</small></span></div>
+          <div className="art-caption">Your potential,<br /><strong>in focus.</strong></div>
+        </div>
+      </section>
+
+      <section className="logo-strip"><span>Trusted by curious minds at</span><strong>acme</strong><strong>northstar</strong><strong className="logo-serif">monday</strong><strong>Vercel</strong><strong className="logo-script">luma</strong></section>
+
+      <section className="analyzer-section section-pad" id="analyzer">
+        <div className="section-heading centered reveal"><h2>One upload.<br /><em>A clearer direction.</em></h2><p>See what&apos;s working, what&apos;s missing, and exactly where to focus next. Free forever, no credit card needed.</p></div>
+        <div className="upload-panel reveal">
+          <div className="upload-content">
+            <span className="upload-icon"><Spark /></span>
+            <h3>Drop your resume here</h3>
+            <p>PDF only · Max 5MB</p>
+            <Link className="button button-dark upload-button" to="/workspace">Generate my analysis <Arrow /></Link>
+            <span className="demo-button"><Link to="/workspace">or open your workspace</Link></span>
+          </div>
+          <div className="upload-aside"><span className="aside-kicker">What you&apos;ll get</span><div><Check /> Match score for your target role</div><div><Check /> Skill gaps ranked by priority</div><div><Check /> Likely interview questions &amp; answers</div><div><Check /> A day-by-day preparation plan</div></div>
+        </div>
+      </section>
+
+      <section className="feature-section section-pad" id="tools">
+        <div className="section-heading reveal"><h2>Everything you need to<br /><em>move forward.</em></h2></div>
+        <div className="feature-grid reveal">
+          {features.map(({ number, title, text, color, Visual }) => (
+            <article className={`feature-card ${color}`} key={number}>
+              <span className="feature-number">{number}</span>
+              <div className="feature-visual">{Visual()}</div>
+              <h3>{title}</h3>
+              <p>{text}</p>
+              <Link to="/workspace">Explore tool <Arrow /></Link>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="roadmap-section section-pad" id="how-it-works">
+        <div className="roadmap-copy reveal"><h2>Stop guessing.<br /><em>Start growing.</em></h2><p>Your roadmap is built from your experience, your goals, and the roles you&apos;re reaching for. Small steps, meaningful momentum.</p><Link className="button button-dark" to="/workspace">Build my roadmap <Arrow /></Link></div>
+        <div className="roadmap-visual reveal"><div className="roadmap-header"><span>YOUR 12-WEEK ROADMAP</span><span className="live-pill"><i /> In progress</span></div><div className="roadmap-role"><div><small>Target role</small><strong>Senior Product Designer</strong></div><span className="progress-circle">42%</span></div><div className="roadmap-timeline"><div className="timeline-item done"><span>01</span><div><strong>Sharpen your story</strong><small>Resume &amp; portfolio foundation</small></div><Check /></div><div className="timeline-item active"><span>02</span><div><strong>Close your skill gaps</strong><small>Research methods · SQL basics</small></div><div className="timeline-bar"><i /></div></div><div className="timeline-item"><span>03</span><div><strong>Show your impact</strong><small>Build a case study that lands</small></div></div></div></div>
+      </section>
+
+      <section className="cta-band reveal">
+        <div className="cta-band__copy">
+         <h2>See where you stand<br /><em>in about 30 seconds.</em></h2>
+        </div>
+        <Link className="button button-light button-large" to="/workspace">Analyze my resume <Arrow /></Link>
+      </section>
+
+      <footer className="site-footer">
+        <div className="site-footer__top">
+          <div className="site-footer__brand">
+            <BrandLogo />
+            <p>Make your next move a good one.</p>
+          </div>
+          <nav className="site-footer__links" aria-label="Footer">
+            <a href="#tools">Features</a>
+            <a href="#how-it-works">How it works</a>
+            <Link to="/login">Log in</Link>
+            <Link to="/register">Get started</Link>
+          </nav>
+        </div>
+        <small>© {new Date().getFullYear()} Gapwise. Built for your next chapter.</small>
+      </footer>
+    </main>
+  );
+}
 
 export default Home;

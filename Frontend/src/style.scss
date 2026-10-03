@@ -1,4 +1,5 @@
 @use "./style/button.scss";
+@use "./style/theme" as t;
 
 * {
   margin: 0%;
@@ -11,29 +12,88 @@ body,
 #root {
   width: 100%;
   min-height: 100%;
-  background-color: #161616;
-  color: whitesmoke;
-  font-family:
-    "Segoe UI",
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    "Open Sans",
-    "Helvetica Neue",
-    sans-serif;
+  background-color: #f7f8f4;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  overflow-x: hidden;
+  color: #19201d;
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+// ---------- Theme ----------
+:root { color-scheme: light; }
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  &,
+  body,
+  #root { background-color: t.$d-bg; }
+
+  body { color: t.$d-text; }
+}
+
+// Circular reveal when switching themes (View Transitions API)
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+// Fallback cross-fade for browsers without View Transitions
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition:
+    background-color .4s ease,
+    border-color .4s ease,
+    color .4s ease,
+    fill .4s ease,
+    stroke .4s ease,
+    box-shadow .4s ease !important;
+}
+
+// Form controls don't inherit the page font by default (they fall back to Arial)
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+// One typographic system everywhere: DM Sans for text, DM Serif Display italic for accent words
+h1 em,
+h2 em {
+  font-family: "DM Serif Display", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -.01em;
 }
 
 .highlight {
   color: #d20d3b;
 }
+
+// Quiet splash shown while a protected page checks the session
+.app-splash {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 3% 8%, rgba(205, 241, 218, .75), transparent 28%),
+    linear-gradient(135deg, #f9faf7 0%, #f4f7f2 55%, #f8f4ec 100%);
+  animation: app-splash-in .4s ease .15s both;
+}
+:root[data-theme="dark"] .app-splash { background: t.$d-page-bg; }
+@keyframes app-splash-in { from { opacity: 0; } }
 
 .loading-screen {
   width: 100%;

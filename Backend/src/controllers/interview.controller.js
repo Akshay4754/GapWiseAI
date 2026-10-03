@@ -1,13 +1,11 @@
 const {
   generateInterviewReport,
   generateResumePdf,
-  answerQuestionFromPdf,
 } = require("../services/ai.service");
 const {
   extractPdfTextFromBuffer,
   formatRetrievedChunks,
   initializeResumeCollection,
-  retrieveRelevantPdfChunks,
   retrieveRelevantResumeChunks,
 } = require("../services/rag.service");
 const interviewReportModel = require("../models/interviewReport.model");
@@ -194,129 +192,6 @@ async function getAllInterviewReportsController(req, res) {
 }
 
 /**
- * @description Controller to answer a question from an uploaded PDF using RAG.
- */
-async function askFromPdfController(req, res) {
-  try {
-    const question = req.body.question?.trim() || "";
-
-    if (!question) {
-      return res.status(400).json({
-        message: "Question is required.",
-      });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({
-        message: "Please upload a PDF file.",
-      });
-    }
-
-    const isPdfMime = req.file.mimetype === "application/pdf";
-    const isPdfByName =
-      typeof req.file.originalname === "string" &&
-      req.file.originalname.toLowerCase().endsWith(".pdf");
-
-    if (!isPdfMime && !isPdfByName) {
-      return res.status(400).json({
-        message: "Only PDF files are supported for Ask From PDF.",
-      });
-    }
-
-    const pdfText = await extractPdfTextFromBuffer(req.file.buffer);
-
-    if (!pdfText) {
-      return res.status(400).json({
-        message: "Could not extract text from the uploaded PDF.",
-      });
-    }
-
-    const sourceId = `pdf-${req.user.id}-${Date.now()}`;
-    let relevantChunks = [];
-    let context = pdfText.slice(0, 6000);
-
-    try {
-      await initializeResumeCollection(req.user.id, pdfText, {
-        sourceId,
-        fileName: req.file.originalname || "document.pdf",
-        docType: "pdf-qa",
-      });
-
-      relevantChunks = await retrieveRelevantPdfChunks(
-        req.user.id,
-        question,
-        5,
-        {
-          sourceId,
-          docType: "pdf-qa",
-        },
-      );
-
-      if (relevantChunks.length > 0) {
-        context = formatRetrievedChunks(relevantChunks);
-      }
-    } catch (ragError) {
-      console.warn(
-        "[RAG] Ask From PDF retrieval failed, using extracted PDF text:",
-        ragError.message,
-      );
-    }
-
-    const answer = await answerQuestionFromPdf({
-      question,
-      context,
-      documentName: req.file.originalname || "Uploaded PDF",
-    });
-
-    return res.status(200).json({
-      message: "PDF question answered successfully.",
-      answer: answer.answer,
-      supportingPoints: answer.supportingPoints,
-      sources:
-        relevantChunks.length > 0
-          ? relevantChunks.map((chunk) => ({
-              fileName:
-                chunk.metadata?.fileName ||
-                req.file.originalname ||
-                "Uploaded PDF",
-              chunk: chunk.pageContent,
-            }))
-          : [
-              {
-                fileName: req.file.originalname || "Uploaded PDF",
-                chunk: pdfText.slice(0, 6000),
-              },
-            ],
-    });
-  } catch (error) {
-    console.error("Failed to answer question from PDF:", error);
-
-    if (error?.code === "MISSING_AI_API_KEY") {
-      return res.status(500).json({
-        message: error.message,
-      });
-    }
-
-    if (error?.code === "MISSING_PINECONE_CONFIG") {
-      return res.status(500).json({
-        message: error.message,
-      });
-    }
-
-    if (error?.status === 429 || error?.status === 503) {
-      return res.status(error.status).json({
-        message:
-          "AI service is temporarily busy. Please try again in a moment.",
-      });
-    }
-
-    res.status(500).json({
-      message: "Failed to answer the PDF question. Please try again.",
-    });
-  }
-}
-
-/**
  * @description Controller to generate resume PDF based on user self description, resume and job description.
  */
 async function generateResumePdfController(req, res) {
@@ -368,5 +243,4 @@ module.exports = {
   getInterviewReportByIdController,
   getAllInterviewReportsController,
   generateResumePdfController,
-  askFromPdfController,
 };

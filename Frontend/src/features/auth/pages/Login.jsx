@@ -1,102 +1,91 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router";
-import "../auth.form.scss";
+import { Navigate, useNavigate, Link } from "react-router";
 import { useAuth } from "../hooks/useAuth";
+import AuthLayout from "../components/AuthLayout.jsx";
+import AuthField from "../components/AuthField.jsx";
+import { MailIcon, LockIcon, ArrowIcon, AlertIcon } from "../components/AuthIcons.jsx";
+import { usePageTitle } from "../../../hooks/usePageTitle.js";
 
 const Login = () => {
-  const { loading, handleLogin } = useAuth();
+  const { loading, user, handleLogin } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  // Local flag so the button only shows "busy" for the user's own submit,
+  // not while the app checks for an existing session on first load
+  const [submitting, setSubmitting] = useState(false);
+  usePageTitle("Sign in · Gapwise");
+
+  if (!loading && user) {
+    return <Navigate to="/workspace" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSubmitting(true);
 
     try {
       await handleLogin({ email, password });
-      navigate("/");
+      navigate("/workspace");
     } catch (err) {
       setError(err.message || "Login failed. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <main className="auth-shell">
-      <div className="auth-shell__ambient" />
-      <div className="auth-shell__grid" />
-
-      <section className="auth-shell__panel auth-shell__panel--intel">
-        <div className="auth-intel">
-          <p className="auth-kicker">GapWise Security Layer</p>
-          <h1>Interview intelligence.</h1>
-          <p className="auth-intel__lede">
-            Private AI tools for resumes, PDFs, and role prep.
-          </p>
-
-          <div className="auth-tags">
-            <span>Secure Access</span>
-            <span>Resume Analysis</span>
-            <span>PDF Q&amp;A</span>
-          </div>
+    <AuthLayout
+      title={<>Welcome back <em>to clarity.</em></>}
+      lede="Pick up your resume insights, focused prep, and next career move."
+    >
+      <div className="auth-card">
+        <div className="auth-card__header">
+          <h2>Sign in</h2>
+          <p>Continue into your personal career workspace.</p>
         </div>
-      </section>
 
-      <section className="auth-shell__panel auth-shell__panel--form">
-        <div className="auth-card">
-          <div className="auth-card__header">
-            <p className="auth-kicker">Access Node</p>
-            <h2>Welcome back</h2>
-            <p>
-              Continue into your interview workspace and secure document tools.
-            </p>
-          </div>
+        <form onSubmit={handleSubmit}>
+          <AuthField
+            id="email"
+            label="Email"
+            type="email"
+            icon={<MailIcon />}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+            required
+          />
+          <AuthField
+            id="password"
+            label="Password"
+            type="password"
+            icon={<LockIcon />}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            required
+          />
 
-          <form onSubmit={handleSubmit}>
-            <div className="input-group">
-              <label htmlFor="email">Email</label>
-              <input
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                }}
-                type="email"
-                id="email"
-                name="email"
-                placeholder="operator@company.com"
-              />
-            </div>
+          {error && <p className="auth-error" role="alert"><AlertIcon /> {error}</p>}
 
-            <div className="input-group">
-              <label htmlFor="password">Password</label>
-              <input
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                }}
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Enter secure passphrase"
-              />
-            </div>
+          <button className="auth-submit" disabled={submitting}>
+            {submitting ? <span className="auth-spinner" /> : null}
+            {submitting ? "Signing you in…" : "Enter workspace"}
+            {!submitting && <ArrowIcon />}
+          </button>
+        </form>
 
-            {error && <p className="auth-error">{error}</p>}
-
-            <button className="button primary-button auth-button" disabled={loading}>
-              {loading ? "Authorizing..." : "Enter Workspace"}
-            </button>
-          </form>
-
-          <div className="auth-card__footer">
-            <span>New operator?</span>
-            <Link to="/register">Create secure access</Link>
-          </div>
-        </div>
-      </section>
-    </main>
+        <p className="auth-card__switch">
+          New here? <Link to="/register">Create your account</Link>
+        </p>
+      </div>
+    </AuthLayout>
   );
 };
 

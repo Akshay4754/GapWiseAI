@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 
 const normalizedApiUrl = (
   import.meta.env.VITE_API_URL || "http://localhost:3000"
@@ -78,20 +78,3 @@ export const generateResumePdf = async ({ interviewReportId }) => {
   return response.data;
 };
 
-/**
- * @description Service to ask a question from an uploaded PDF using RAG.
- */
-export const askQuestionFromPdf = async ({ pdfFile, question }) => {
-  const formData = new FormData();
-  formData.append("question", question || "");
-
-  const hasPdfFile =
-    pdfFile && typeof pdfFile === "object" && typeof pdfFile.name === "string";
-  if (hasPdfFile) {
-    formData.append("pdf", pdfFile);
-  }
-
-  const response = await api.post("/api/interview/ask-from-pdf", formData);
-
-  return response.data;
-};
