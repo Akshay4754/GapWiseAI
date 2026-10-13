@@ -41,6 +41,7 @@ app.use(
 /* require all the routes here */
 const authRouter = require("./routes/auth.routes");
 const interviewRouter = require("./routes/interview.routes");
+const agentRouter = require("./routes/agent.routes");
 
 // ── Root health check route ────────────────────────────────
 app.get("/", (req, res) => {
@@ -53,6 +54,7 @@ app.get("/", (req, res) => {
 /* using all the routes here */
 app.use("/api/auth", authRouter);
 app.use("/api/interview", interviewRouter);
+app.use("/api/agent", agentRouter);
 
 app.use((err, req, res, next) => {
   if (err?.code === "LIMIT_FILE_SIZE") {

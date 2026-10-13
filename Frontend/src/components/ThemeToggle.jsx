@@ -44,9 +44,12 @@ const ThemeToggle = ({ className = "" }) => {
     const y = top + height / 2;
     const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
 
+    // Marks this transition as a theme switch so the page-change animation stays out of it
+    root.classList.add("theme-reveal");
     const transition = document.startViewTransition(() => {
       flushSync(() => apply(next));
     });
+    transition.finished.finally(() => root.classList.remove("theme-reveal"));
 
     transition.ready
       .then(() => {

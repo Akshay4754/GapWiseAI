@@ -139,6 +139,13 @@ $tiers: (
     &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 18px 32px -12px rgba(47,90,64,.8); }
     &:hover:not(:disabled)::after { transform: translateX(120%); }
   }
+  // Quieter secondary action that sits next to a primary one
+  &--soft {
+    color: $green-deep;
+    background: rgba(255,255,255,.8);
+    box-shadow: inset 0 0 0 1px rgba(62,101,73,.2), 0 10px 22px -16px rgba(45,80,58,.45);
+    &:hover:not(:disabled) { transform: translateY(-1px); background: #fff; box-shadow: inset 0 0 0 1px rgba(62,101,73,.34), 0 14px 26px -16px rgba(45,80,58,.55); }
+  }
   &:disabled { opacity: .75; cursor: progress; }
   &:focus-visible { outline: 2px solid #78b38a; outline-offset: 3px; }
 }
@@ -168,6 +175,136 @@ $tiers: (
 }
 :root[data-theme="dark"] .rp-btn--download > svg { background: rgba(6,32,20,.12); box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
 :root[data-theme="dark"] .rp-btn--download:hover:not(:disabled) > svg { background: rgba(6,32,20,.18); }
+
+// Quiet version of the download button, for when it sits beside the main action
+.rp-btn--soft.rp-btn--download {
+  > svg { background: #e6f5e9; box-shadow: inset 0 0 0 1px rgba(62,101,73,.08); }
+  &:hover:not(:disabled) > svg { background: #d9efdf; }
+  .rp-spinner { border-color: rgba(79,130,97,.25); border-top-color: $green; }
+}
+:root[data-theme="dark"] .rp-btn--soft.rp-btn--download {
+  > svg { background: t.$d-wash; box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+  &:hover:not(:disabled) > svg { background: rgba(127,209,160,.2); }
+  .rp-spinner { border-color: rgba(127,209,160,.25); border-top-color: t.$d-mint; }
+}
+
+// ---------- Main action: Optimise With AI Agents ----------
+// Registered so the angle can be animated and the lit border can circle the button
+@property --cta-angle {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+
+$cta-ring: conic-gradient(from var(--cta-angle), #2f5a40 0deg, #2f5a40 200deg, #8fd6a8 265deg, #f4fff8 300deg, #8fd6a8 335deg, #2f5a40 360deg);
+
+.rp-cta {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 1.3rem;
+  color: #fff;
+  background: $cta-ring;
+  text-decoration: none;
+  animation: rp-cta-spin 4.5s linear infinite;
+  transition: transform .3s $ease-spring;
+
+  &:hover { transform: translateY(-2px); }
+  &:active { transform: translateY(0) scale(.985); }
+  &:focus-visible { outline: 2px solid #78b38a; outline-offset: 4px; }
+}
+.rp-cta__body {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: .9rem;
+  overflow: hidden;
+  padding: .6rem .75rem .6rem .6rem;
+  border-radius: calc(1.3rem - 2px);
+  background: linear-gradient(135deg, #234a33, #3c6f51 55%, #4f8261);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+
+  // Shine that crosses the button on hover
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform .8s ease;
+  }
+  .rp-cta:hover &::after { transform: translateX(120%); }
+}
+.rp-cta__chip {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 3rem;
+  height: 3rem;
+  border-radius: .95rem;
+  background: rgba(255,255,255,.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
+  svg { width: 1.7rem; height: 1.7rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  rect { fill: rgba(255,255,255,.16); }
+}
+// Three agents circling the resume
+.rp-cta__orbit {
+  position: absolute;
+  inset: .3rem;
+  animation: rp-spin 5s linear infinite;
+  i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    margin: -2.5px;
+    border-radius: 50%;
+    background: #d9ffe9;
+    box-shadow: 0 0 6px 1px rgba(184,240,207,.9);
+    transform: rotate(var(--a)) translateX(1.2rem);
+  }
+  i:nth-child(1) { --a: 0deg; }
+  i:nth-child(2) { --a: 120deg; opacity: .75; }
+  i:nth-child(3) { --a: 240deg; opacity: .5; }
+  .rp-cta:hover & { animation-duration: 2.2s; }
+}
+.rp-cta__text {
+  display: grid;
+  gap: .1rem;
+  min-width: 0;
+  text-align: left;
+  strong { font-size: 1.04rem; font-weight: 700; line-height: 1.2; letter-spacing: -.02em; white-space: nowrap; }
+  small { font-size: .78rem; font-weight: 500; line-height: 1.3; opacity: .82; }
+}
+.rp-cta__arrow {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  margin-left: auto;
+  border-radius: 50%;
+  background: rgba(255,255,255,.14);
+  transition: transform .35s $ease-spring, background .2s ease;
+  svg { width: 1rem; height: 1rem; }
+  .rp-cta:hover & { transform: translateX(3px); background: rgba(255,255,255,.24); }
+}
+
+:root[data-theme="dark"] {
+  .rp-cta { color: #062014; background: conic-gradient(from var(--cta-angle), #2f6a4e 0deg, #2f6a4e 200deg, #b8ffdd 265deg, #fff 300deg, #b8ffdd 335deg, #2f6a4e 360deg); }
+  .rp-cta__body { background: linear-gradient(135deg, #a8eec4, #6cc592 55%, #4fae78); box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
+  .rp-cta__body::after { background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.5) 50%, transparent 70%); }
+  .rp-cta__chip { background: rgba(6,32,20,.12); box-shadow: inset 0 1px 0 rgba(255,255,255,.3); }
+  .rp-cta__chip rect { fill: rgba(6,32,20,.1); }
+  .rp-cta__orbit i { background: #0c3a25; box-shadow: 0 0 5px 1px rgba(6,32,20,.35); }
+  .rp-cta__text small { opacity: .78; }
+  .rp-cta__arrow { background: rgba(6,32,20,.12); }
+  .rp-cta:hover .rp-cta__arrow { background: rgba(6,32,20,.2); }
+}
 
 .rp-spinner {
   width: 1rem;
@@ -210,6 +347,8 @@ $tiers: (
     letter-spacing: -.035em;
   }
 }
+// Main action on top, the download beneath it at the same width
+.rp-hero__actions { display: flex; flex: 0 0 auto; flex-direction: column; align-items: stretch; gap: .7rem; }
 .rp-hero__sub { max-width: 52ch; margin: .75rem 0 0; color: $muted; font-size: .98rem; line-height: 1.6; }
 .rp-hero__date { margin: .35rem 0 0; color: #66746b; font-size: .84rem; }
 :root[data-theme="dark"] .rp-hero__date { color: t.$d-faint; }
@@ -608,6 +747,7 @@ $tiers: (
 @keyframes rp-tick-in { from { stroke: #dfe7e1; } }
 @keyframes rp-halo { 0%, 100% { transform: scale(1); opacity: .35; } 50% { transform: scale(1.6); opacity: .12; } }
 @keyframes rp-spin { to { transform: rotate(360deg); } }
+@keyframes rp-cta-spin { to { --cta-angle: 360deg; } }
 @keyframes rp-mint-drift { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(32px,23px,0) scale(1.055); } }
 @keyframes rp-peach-drift { 0%,100% { transform: translate3d(0,0,0) rotate(0deg); } 50% { transform: translate3d(-18px,25px,0) rotate(-12deg); } }
 
@@ -619,6 +759,8 @@ $tiers: (
   .interview-page { padding: 1.4rem 1rem 2.6rem; }
   .report-nav__back { font-size: .8rem; }
   .rp-hero { flex-direction: column; align-items: stretch; }
+  .rp-hero__actions { flex-direction: column; align-items: stretch; }
+  .rp-cta { display: flex; }
   .rp-score { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .rp-score__note { margin-inline: auto; }
   .rp-stats { width: 100%; text-align: left; }
@@ -657,6 +799,8 @@ $d-tiers: (
   .rp-btn--primary { @include t.d-primary; }
   .rp-btn--primary:hover:not(:disabled) { box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 18px 34px -14px rgba(79,174,120,.7); }
   .rp-btn--primary::after { background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%); }
+  .rp-btn--soft { color: t.$d-mint; background: t.$d-tint; box-shadow: inset 0 0 0 1px t.$d-border-strong; }
+  .rp-btn--soft:hover:not(:disabled) { background: t.$d-wash; box-shadow: inset 0 0 0 1px rgba(160,220,185,.34); }
   .rp-spinner { border-color: rgba(6,32,20,.25); border-top-color: #062014; }
   .rp-error { border-color: t.$d-danger-border; color: #f5a896; background: t.$d-danger-wash; }
   .rp-hero__sub, .rp-score__note { color: #a5b3aa; }

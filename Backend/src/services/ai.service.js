@@ -505,10 +505,17 @@ async function generatePdfFromHtml(htmlContent) {
       continue;
     }
 
+    // @sparticuz/chromium's flags are written for its Linux build; these two
+    // make desktop Chrome and Edge crash on launch on Windows.
+    const baseArgs =
+      process.platform === "win32"
+        ? chromium.args.filter((arg) => !["--single-process", "--no-zygote"].includes(arg))
+        : chromium.args;
+
     try {
       browser = await puppeteer.launch({
         args: [
-          ...chromium.args,
+          ...baseArgs,
           "--no-sandbox",
           "--disable-setuid-sandbox",
           "--disable-dev-shm-usage",
@@ -643,6 +650,7 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
 }
 
 module.exports = {
+  generatePdfFromHtml,
   generateInterviewReport,
   generateResumePdf,
 };

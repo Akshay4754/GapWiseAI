@@ -7,6 +7,7 @@ import {
 import { useContext, useEffect } from "react";
 import { InterviewContext } from "../interview.context";
 import { useParams } from "react-router";
+import { withViewTransition } from "../../../utils/viewTransition.js";
 
 export const useInterview = () => {
   const context = useContext(InterviewContext);
@@ -73,7 +74,8 @@ export const useInterview = () => {
       setError(message);
       throw new Error(message);
     } finally {
-      setLoading(false);
+      // The loading screen cross-fades into the report instead of cutting to it
+      withViewTransition(() => setLoading(false));
     }
   };
 

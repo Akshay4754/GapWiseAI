@@ -223,10 +223,28 @@ const Interview = () => {
           <p className="rp-hero__sub">Your match, the gaps that matter, and a focused plan to close them.</p>
           {created && <p className="rp-hero__date">Generated on {created}</p>}
         </div>
-        <button onClick={downloadResume} disabled={downloadingResume} className="rp-btn rp-btn--primary rp-btn--download">
-          {downloadingResume ? <span className="rp-spinner" /> : <Icon.Download />}
-          {downloadingResume ? "Preparing your PDF…" : "Download ATS-Friendly Resume"}
-        </button>
+        <div className="rp-hero__actions">
+          {/* The page's main action: a lit border circles it and agents orbit the resume in its icon */}
+          <Link className="rp-cta" to={`/optimize/${interviewId}`}>
+            <span className="rp-cta__body">
+              <span className="rp-cta__chip" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="8" y="6.2" width="8" height="11.6" rx="1.7" /><path d="M10.4 10.2h3.2M10.4 13.2h3.2" /></svg>
+                <span className="rp-cta__orbit"><i /><i /><i /></span>
+              </span>
+              <span className="rp-cta__text">
+                <strong>Optimise With AI Agents</strong>
+                <small>Five agents tune it to this job</small>
+              </span>
+              <span className="rp-cta__arrow" aria-hidden="true">
+                <svg {...svgProps}><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
+              </span>
+            </span>
+          </Link>
+          <button onClick={downloadResume} disabled={downloadingResume} className="rp-btn rp-btn--soft rp-btn--download">
+            {downloadingResume ? <span className="rp-spinner" /> : <Icon.Download />}
+            {downloadingResume ? "Preparing your PDF…" : "Download ATS-Friendly Resume"}
+          </button>
+        </div>
       </header>
 
       {error && <p className="rp-error" role="alert"><Icon.Alert /> {error}</p>}

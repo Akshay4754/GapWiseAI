@@ -12,10 +12,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/genai": "^1.42.0",
     "@langchain/core": "^0.3.79",
     "@langchain/google-genai": "^0.1.10",
+    "@langchain/langgraph": "^0.4.10",
     "@langchain/pinecone": "^0.2.0",
-    "@google/genai": "^1.42.0",
     "@pinecone-database/pinecone": "^5.1.1",
     "@sparticuz/chromium": "^133.0.0",
     "bcryptjs": "^3.0.3",

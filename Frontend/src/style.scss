@@ -40,11 +40,29 @@ body {
   body { color: t.$d-text; }
 }
 
-// Circular reveal when switching themes (View Transitions API)
-::view-transition-old(root),
+// Moving between pages (View Transitions API): the old page lifts away while
+// the new one settles in.
+::view-transition-old(root) {
+  animation: page-out .22s cubic-bezier(.4, 0, 1, 1) both;
+}
 ::view-transition-new(root) {
+  animation: page-in .45s cubic-bezier(.2, .8, .2, 1) .1s both;
+}
+@keyframes page-out { to { opacity: 0; transform: translateY(-12px) scale(.992); } }
+@keyframes page-in { from { opacity: 0; transform: translateY(16px) scale(.992); } }
+
+// Switching themes: ThemeToggle draws its own circular reveal instead
+:root.theme-reveal::view-transition-old(root),
+:root.theme-reveal::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
 
 // Fallback cross-fade for browsers without View Transitions

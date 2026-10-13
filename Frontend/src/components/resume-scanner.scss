@@ -22,6 +22,7 @@ $ease-out: cubic-bezier(.2, .8, .2, 1);
     radial-gradient(circle at 18% 20%, rgba(72,184,130,.16), transparent 34%),
     radial-gradient(circle at 85% 85%, rgba(22,92,63,.22), transparent 30%),
     linear-gradient(140deg, #07130f 0%, #0b1c16 45%, #050d0a 100%);
+  animation: rs-in .4s ease both;
 
   // subtle dotted texture
   &::before {
@@ -373,6 +374,7 @@ $ease-out: cubic-bezier(.2, .8, .2, 1);
 }
 
 // ---------- Keyframes ----------
+@keyframes rs-in { from { opacity: 0; } }
 @keyframes rs-sway {
   0%, 100% { transform: rotateX(56deg) rotateZ(-36deg) translateZ(0); }
   50%      { transform: rotateX(50deg) rotateZ(-24deg) translateZ(10px); }
@@ -451,7 +453,7 @@ $ease-out: cubic-bezier(.2, .8, .2, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rs *, .rs *::before, .rs *::after { animation: none !important; }
+  .rs, .rs *, .rs *::before, .rs *::after { animation: none !important; }
   .rs__stage { transform: rotateX(54deg) rotateZ(-30deg); }
   .rs__beam, .rs__head { display: none; }
 }
